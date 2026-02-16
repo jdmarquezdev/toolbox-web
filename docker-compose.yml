@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: toolbox
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  admin:
+    image: oven/bun:1.2.22
+    working_dir: /app
+    command: sh -c "bun install && bun run dev:admin"
+    ports:
+      - "5173:5173"
+    env_file:
+      - .env
+    volumes:
+      - ./:/app
+    depends_on:
+      - postgres
+
+  public:
+    image: oven/bun:1.2.22
+    working_dir: /app
+    command: sh -c "bun install && bun run dev:public"
+    ports:
+      - "4321:4321"
+    env_file:
+      - .env
+    volumes:
+      - ./:/app
+    depends_on:
+      - admin
+
+volumes:
+  pg_data:

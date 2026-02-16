@@ -1,0 +1,155 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CustomSelect from "../components/CustomSelect.astro";
+import { apiGet } from "../lib/api";
+import { resolveToolMediaUrl } from "../lib/media";
+import { youtubeEmbedUrl, youtubeThumbnailUrl } from "../lib/youtube";
+
+const query = Astro.url.searchParams.get("query") ?? "";
+const sourceType = Astro.url.searchParams.get("sourceType") ?? "";
+const filtersParam = Astro.url.searchParams.get("filters") ?? "";
+const filtersOpen = filtersParam === "open" || query.length > 0 || sourceType.length > 0;
+
+const params = new URLSearchParams();
+if (query) params.set("query", query);
+if (sourceType) params.set("sourceType", sourceType);
+
+const tools = await apiGet<any[]>(`/api/public/tools?${params.toString()}`, { origin: Astro.url.origin });
+const toolsWithMedia = tools.map((tool) => ({
+  ...tool,
+  mediaUrl: resolveToolMediaUrl(tool)
+}));
+
+const filterPanelClass = filtersOpen ? "filter-panel is-open" : "filter-panel";
+---
+
+<BaseLayout title="Toolbox | Herramientas IA" description="Herramientas IA curadas, filtrables y públicas.">
+  <section class="tools-page" style="display:grid;gap:1rem;" data-tools-page>
+    <div class="section-head">
+      <h1 class="section-title">Herramientas relevantes</h1>
+      <p class="section-subtitle">Búsqueda, filtros y detalle de herramientas de IA.</p>
+    </div>
+
+    <div class="filter-controls">
+      <div class="filter-anchor">
+        <div id="filter-panel" class={filterPanelClass} data-filter-panel>
+          <form id="filters-form" class="card filters-grid" style="padding:1rem;" data-filter-form>
+            <input type="hidden" name="filters" value="open" />
+            <input type="text" name="query" value={query} placeholder="Buscar por nombre o descripción" />
+            <CustomSelect
+              name="sourceType"
+              value={sourceType}
+              autoSubmit={true}
+              options={[
+                { value: "", label: "Fuente" },
+                { value: "website", label: "Web" },
+                { value: "github", label: "GitHub" },
+                { value: "youtube", label: "Video" },
+                { value: "article", label: "Artículo" },
+                { value: "x", label: "X" }
+              ]}
+            />
+            <button type="submit" class="primary">Aplicar</button>
+          </form>
+        </div>
+
+        <button
+          id="toggle-filter-panel"
+          type="button"
+          class="action-btn action-btn-accent filter-toggle-btn icon-only-btn"
+          aria-controls="filter-panel"
+          aria-expanded={filtersOpen ? "true" : "false"}
+          aria-label="Abrir filtros"
+          title="Filtrar"
+        >
+          <span class="icon-mask icon-filter" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="tools-grid">
+      {toolsWithMedia.map((tool, index) => (
+        <article
+          class="tool-card tool-card-link"
+          style={`--i:${index}`}
+          role="link"
+          tabindex="0"
+          data-card-link
+          data-card-url={tool.url}
+        >
+          <div class="tool-media">
+            {
+              tool.sourceType === "youtube" && youtubeEmbedUrl(tool.url) ? (
+                <div
+                  class="video-inline"
+                  data-youtube-inline
+                  data-embed-url={youtubeEmbedUrl(tool.url) ?? ""}
+                  data-title={tool.title ? `Video de ${tool.title}` : "Video de herramienta"}
+                  data-no-card-nav
+                >
+                  <img
+                    src={youtubeThumbnailUrl(tool.url) ?? tool.ogImageUrl ?? "https://i.ytimg.com/vi/0/hqdefault.jpg"}
+                    alt={tool.title ? `Video de ${tool.title}` : "Video de herramienta"}
+                    loading="lazy"
+                  />
+                  <button type="button" class="video-play-btn" data-youtube-play>
+                    <span class="icon-mask icon-play" aria-hidden="true"></span>
+                  </button>
+                </div>
+              ) : tool.mediaUrl ? (
+                <img
+                  src={tool.mediaUrl}
+                  alt={tool.title ? `Imagen de ${tool.title}` : "Preview de herramienta"}
+                  loading="lazy"
+                />
+              ) : (
+                <div class="tool-placeholder">{(tool.title ?? "AI").slice(0, 2)}</div>
+              )
+            }
+          </div>
+          <div class="tool-content">
+            <h2 class="tool-name">{tool.title ?? "Sin título"}</h2>
+            <p class="tool-meta">{tool.sourceType}</p>
+            <p class="tool-desc">{tool.description ?? "Sin descripción"}</p>
+            <div class="tool-footer">
+                <a href={`/tools/${tool.slug ?? tool.id}`} class="tool-link">Ver detalle</a>
+              </div>
+            </div>
+          </article>
+      ))}
+    </div>
+  </section>
+
+  <script is:inline>
+    (() => {
+      const toggleBtn = document.getElementById("toggle-filter-panel");
+      const panel = document.querySelector("[data-filter-panel]");
+      const form = document.querySelector("[data-filter-form]");
+      const toolsPage = document.querySelector("[data-tools-page]");
+      if (!toggleBtn || !panel) return;
+
+      toggleBtn.addEventListener("click", () => {
+        const isOpen = panel.classList.toggle("is-open");
+        toggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      });
+
+      if (form && toolsPage) {
+        form.addEventListener("submit", (event) => {
+          if (form.dataset.submitting === "1") {
+            return;
+          }
+
+          event.preventDefault();
+          form.dataset.submitting = "1";
+          toolsPage.classList.add("is-filtering-out");
+
+          window.setTimeout(() => {
+            if (typeof form.submit === "function") {
+              form.submit();
+            }
+          }, 100);
+        });
+      }
+    })();
+  </script>
+</BaseLayout>

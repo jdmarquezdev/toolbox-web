@@ -1,0 +1,118 @@
+---
+type SelectOption = {
+  value: string;
+  label: string;
+};
+
+type Props = {
+  name: string;
+  options: SelectOption[];
+  value?: string;
+  autoSubmit?: boolean;
+};
+
+const { name, options, value = "", autoSubmit = false } = Astro.props;
+const selected = options.find((option) => option.value === value) ?? options[0];
+---
+
+<div class="custom-select" data-custom-select>
+  <input type="hidden" name={name} value={value} data-custom-select-input />
+  <input type="hidden" value={autoSubmit ? "true" : "false"} data-custom-select-autosubmit />
+  <button type="button" class="custom-select-trigger" aria-expanded="false" data-custom-select-trigger>
+    <span data-custom-select-label>{selected?.label ?? "Seleccionar"}</span>
+    <span class="custom-select-caret" aria-hidden="true">▾</span>
+  </button>
+  <div class="custom-select-menu" hidden data-custom-select-menu role="listbox">
+    {
+      options.map((option) => (
+        <button
+          type="button"
+          class={`custom-select-option ${option.value === value ? "is-active" : ""}`}
+          data-custom-select-option
+          data-value={option.value}
+          data-label={option.label}
+          role="option"
+          aria-selected={option.value === value ? "true" : "false"}
+        >
+          {option.label}
+        </button>
+      ))
+    }
+  </div>
+</div>
+
+<script is:inline>
+  (() => {
+    const win = window;
+
+    const closeAll = () => {
+      document.querySelectorAll("[data-custom-select].is-open").forEach((root) => {
+        root.classList.remove("is-open");
+        const trigger = root.querySelector("[data-custom-select-trigger]");
+        const menu = root.querySelector("[data-custom-select-menu]");
+        if (trigger) trigger.setAttribute("aria-expanded", "false");
+        if (menu) menu.hidden = true;
+      });
+    };
+
+    const setup = (root) => {
+      if (root.dataset.bound === "true") return;
+      root.dataset.bound = "true";
+
+      const trigger = root.querySelector("[data-custom-select-trigger]");
+      const menu = root.querySelector("[data-custom-select-menu]");
+      const input = root.querySelector("[data-custom-select-input]");
+      const label = root.querySelector("[data-custom-select-label]");
+      const autoSubmit = root.querySelector("[data-custom-select-autosubmit]");
+
+      if (!trigger || !menu || !input || !label) return;
+
+      trigger.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const willOpen = !root.classList.contains("is-open");
+        closeAll();
+        if (willOpen) {
+          root.classList.add("is-open");
+          trigger.setAttribute("aria-expanded", "true");
+          menu.hidden = false;
+        }
+      });
+
+      root.querySelectorAll("[data-custom-select-option]").forEach((option) => {
+        option.addEventListener("click", () => {
+          const value = option.getAttribute("data-value") ?? "";
+          const text = option.getAttribute("data-label") ?? option.textContent ?? "";
+
+          input.value = value;
+          label.textContent = text;
+
+          root.querySelectorAll("[data-custom-select-option]").forEach((item) => {
+            item.classList.remove("is-active");
+            item.setAttribute("aria-selected", "false");
+          });
+
+          option.classList.add("is-active");
+          option.setAttribute("aria-selected", "true");
+          closeAll();
+
+          if (autoSubmit && autoSubmit.value === "true") {
+            const form = root.closest("form");
+            if (form && typeof form.requestSubmit === "function") {
+              form.requestSubmit();
+            }
+          }
+        });
+      });
+    };
+
+    document.querySelectorAll("[data-custom-select]").forEach(setup);
+
+    if (!win.__toolboxSelectInit) {
+      win.__toolboxSelectInit = true;
+      document.addEventListener("click", () => closeAll());
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeAll();
+      });
+    }
+  })();
+</script>

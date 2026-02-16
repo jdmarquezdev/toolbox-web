@@ -1,0 +1,85 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { apiGet } from "../../lib/api";
+import { resolveToolMediaUrl } from "../../lib/media";
+import { youtubeEmbedUrl, youtubeThumbnailUrl } from "../../lib/youtube";
+
+const { slug } = Astro.params;
+let collection: any;
+
+try {
+  collection = await apiGet(`/api/public/collections/${slug}`, { origin: Astro.url.origin });
+} catch {
+  return Astro.redirect("/collections");
+}
+
+const toolsWithMedia = collection.tools.map((tool: any) => ({
+  ...tool,
+  mediaUrl: resolveToolMediaUrl(tool)
+}));
+---
+
+<BaseLayout title={`${collection.name} | Toolbox`} description={collection.description ?? "Colección curada"}>
+  <section style="display:grid;gap:1rem;">
+    <header class="section-head with-back">
+      <div class="section-head-text">
+        <h1 class="section-title">{collection.name}</h1>
+        <p class="section-subtitle">{collection.description ?? "Sin descripción"}</p>
+      </div>
+      <a href="/collections" class="action-btn action-btn-accent icon-only-btn" aria-label="Volver a colecciones" title="Volver">
+        <span class="icon-mask icon-back" aria-hidden="true"></span>
+      </a>
+    </header>
+
+    <div class="tools-grid">
+      {toolsWithMedia.map((tool: any) => (
+        <article
+          class="tool-card tool-card-link"
+          role="link"
+          tabindex="0"
+          data-card-link
+          data-card-url={tool.url}
+        >
+          <div class="tool-media">
+            {
+              tool.sourceType === "youtube" && youtubeEmbedUrl(tool.url) ? (
+                <div
+                  class="video-inline"
+                  data-youtube-inline
+                  data-embed-url={youtubeEmbedUrl(tool.url) ?? ""}
+                  data-title={tool.title ? `Video de ${tool.title}` : "Video de herramienta"}
+                  data-no-card-nav
+                >
+                  <img
+                    src={youtubeThumbnailUrl(tool.url) ?? tool.ogImageUrl ?? "https://i.ytimg.com/vi/0/hqdefault.jpg"}
+                    alt={tool.title ? `Video de ${tool.title}` : "Video de herramienta"}
+                    loading="lazy"
+                  />
+                  <button type="button" class="video-play-btn" data-youtube-play>
+                    <span class="icon-mask icon-play" aria-hidden="true"></span>
+                  </button>
+                </div>
+              ) : tool.mediaUrl ? (
+                <img
+                  src={tool.mediaUrl}
+                  alt={tool.title ? `Imagen de ${tool.title}` : "Preview de herramienta"}
+                  loading="lazy"
+                />
+              ) : (
+                <div class="tool-placeholder">{(tool.title ?? "AI").slice(0, 2)}</div>
+              )
+            }
+          </div>
+            <div class="tool-content">
+              <h2 class="tool-name">{tool.title ?? "Sin título"}</h2>
+              <p class="tool-meta">{tool.sourceType}</p>
+              <p class="tool-desc">{tool.description ?? "Sin descripción"}</p>
+              <div class="tool-footer">
+                <a href={`/tools/${tool.slug ?? tool.id}`} class="tool-link">Ver detalle</a>
+              </div>
+            </div>
+          </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

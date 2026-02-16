@@ -1,0 +1,24 @@
+{
+  "name": "toolbox-web",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "bun@1.2.22",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "overrides": {
+    "zod": "4.1.5"
+  },
+  "scripts": {
+    "dev": "bun run --filter @toolbox/admin dev",
+    "dev:admin": "bun run --filter @toolbox/admin dev",
+    "dev:public": "bun run --filter @toolbox/public dev",
+    "build": "bun run --filter @toolbox/core build && bun run --filter @toolbox/admin build && bun run --filter @toolbox/public build",
+    "check": "bun run --filter @toolbox/admin check && bun run --filter @toolbox/public check",
+    "lint": "bun run --filter @toolbox/admin lint && bun run --filter @toolbox/public lint"
+  },
+  "devDependencies": {
+    "typescript": "5.7.2"
+  }
+}

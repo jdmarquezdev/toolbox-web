@@ -1,0 +1,171 @@
+---
+import "../styles/global.css";
+
+type Props = {
+  title?: string;
+  description?: string;
+};
+
+const {
+  title = "Toolbox",
+  description = "Colección curada de herramientas de IA"
+} = Astro.props;
+
+const isCollectionsPage = Astro.url.pathname.startsWith("/collections");
+const hasCookieConsent = Astro.cookies.get("toolbox_cookie_consent")?.value === "1";
+const redirectTo = `${Astro.url.pathname}${Astro.url.search}`;
+
+const applyTheme = `
+(() => {
+  const stored = localStorage.getItem("toolbox-theme");
+  const dark = stored ? stored === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.classList.toggle("dark", dark);
+})();
+`;
+
+const cardNavigation = `
+(() => {
+  const openCardTarget = (href) => {
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    anchor.click();
+  };
+
+  const shouldIgnoreTarget = (target) => {
+    if (!(target instanceof Element)) return false;
+    return Boolean(target.closest('a, button, input, select, textarea, iframe, [data-no-card-nav]'));
+  };
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (shouldIgnoreTarget(target)) return;
+
+    const card = target instanceof Element ? target.closest('[data-card-link]') : null;
+    if (!card) return;
+
+    const href = card.getAttribute('data-card-url');
+    if (href) openCardTarget(href);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const card = target.closest('[data-card-link]');
+    if (!card) return;
+
+    event.preventDefault();
+    const href = card.getAttribute('data-card-url');
+    if (href) openCardTarget(href);
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const play = target.closest('[data-youtube-play]');
+    if (!play) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const box = play.closest('[data-youtube-inline]');
+    if (!box) return;
+
+    const embedUrl = box.getAttribute('data-embed-url');
+    const title = box.getAttribute('data-title') ?? 'Video';
+    if (!embedUrl) return;
+
+    const iframe = document.createElement('iframe');
+    iframe.src = embedUrl + (embedUrl.includes('?') ? '&autoplay=1' : '?autoplay=1');
+    iframe.title = title;
+    iframe.loading = 'lazy';
+    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    iframe.setAttribute('allowfullscreen', '');
+
+    box.innerHTML = '';
+    box.appendChild(iframe);
+  });
+})();
+`;
+
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://toolbox.jdmarquez.dev" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>{title}</title>
+    <script is:inline set:html={applyTheme}></script>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="header-nav">
+          <a href="/" class={`header-link ${!isCollectionsPage ? "is-active" : ""}`}>Toolbox</a>
+          <a href="/collections" class={`header-link ${isCollectionsPage ? "is-active" : ""}`}>Colecciones</a>
+        </div>
+        <div style="display:flex;gap:.5rem;">
+          <a
+            href="http://localhost:5173"
+            target="_blank"
+            rel="noreferrer"
+            class="action-btn action-btn-accent icon-only-btn"
+            aria-label="Abrir admin"
+            title="Admin"
+          >
+            <span class="icon-mask icon-admin" aria-hidden="true"></span>
+          </a>
+        </div>
+      </header>
+
+      <slot />
+
+      <footer class="site-footer">
+        <div class="site-footer-main">
+          <p class="site-footer-name">Juan Diego Márquez Tebar</p>
+          <a href="mailto:hola@jdmarquez.dev" class="site-footer-link">hola@jdmarquez.dev</a>
+        </div>
+        <div class="site-footer-social">
+          <p class="site-footer-made">Hecho con GPT-Codex</p>
+          <a href="https://github.com/jdmarquezdev/" target="_blank" rel="noreferrer" class="social-btn" aria-label="GitHub" title="GitHub">
+            <span class="icon-mask icon-github" aria-hidden="true"></span>
+          </a>
+          <a href="https://www.linkedin.com/in/juandiegomarquez/" target="_blank" rel="noreferrer" class="social-btn" aria-label="LinkedIn" title="LinkedIn">
+            <span class="icon-mask icon-linkedin" aria-hidden="true"></span>
+          </a>
+        </div>
+      </footer>
+
+      {
+        !hasCookieConsent && (
+          <div class="cookie-banner" role="region" aria-label="Aviso de cookies" aria-live="polite">
+            <p id="cookie-banner-text" class="cookie-text">Usamos cookies técnicas para mejorar la experiencia de navegación.</p>
+            <form method="post" action="/api/cookies/accept" style="margin:0;">
+              <input type="hidden" name="redirectTo" value={redirectTo} />
+              <button type="submit" class="action-btn action-btn-accent" aria-describedby="cookie-banner-text">Aceptar</button>
+            </form>
+          </div>
+        )
+      }
+    </div>
+
+    <script is:inline set:html={cardNavigation}></script>
+  </body>
+</html>

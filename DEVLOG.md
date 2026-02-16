@@ -1,0 +1,83 @@
+# DEVLOG
+
+## 2026-02-16
+
+- Ajuste de arquitectura: se migro el proyecto a monorepo con Astro (`apps/public`) y SvelteKit (`apps/admin`) como stack base requerido.
+- Se creo `packages/core` para centralizar env, DB, auth de sesion, normalizacion de URL, metadata OG y repositorio SQL.
+- Se mantuvo el esquema Postgres en `db/schema.sql` alineado a `AGENTS.md`.
+- Se implemento API en SvelteKit con endpoints:
+  - Public: `/api/public/tools`, `/api/public/tools/:idOrSlug`, `/api/public/collections`, `/api/public/collections/:slug`, feeds JSON/RSS.
+  - Admin: `/api/admin/tools`, `/api/admin/tags`, `/api/admin/categories`, `/api/admin/collections`.
+  - Ingestion y gestion: `POST /api/tools`, `PATCH /api/tools/:id`.
+- Se implemento dedupe completo con incremento de `seenCount` y actualizacion de `lastSeenAt`.
+- Se implemento panel admin inicial con login por cookie firmada, inbox de captura y triage relevante/descartada.
+- Se implemento web publica en Astro con listado filtrable, detalle de herramienta, colecciones, sitemap y feed JSON.
+- Se agrego modo oscuro en public/admin con preferencia persistida.
+- Se migro el workspace para usar Bun como package manager (`bun.lock`, scripts root y compose con imagen `oven/bun`).
+- Se validaron checks de admin y public con `bun run check` sin errores.
+- Se rediseno el front publico con estetica inspirada en tarjetas de ponentes (dark + acento amarillo), cards clicables y media 16:9.
+- Se implemento video inline para recursos YouTube: thumbnail con boton play y carga diferida de iframe solo al interactuar.
+- Se corrigio resolucion de `ogImageUrl` relativas (captura y render), incluyendo backfill de datos existentes en DB.
+- Se simplifico el filtrado publico: se elimino pricing y orden del panel; se agrego fuente `X (post/hilo)`.
+- Se creo panel de filtros colapsable por defecto con boton de filtro e icono Material y animacion de apertura/cierre.
+- Se rediseño el panel admin para usar tarjetas coherentes con la web publica, con preview media y acciones de estado en el footer.
+- Se introdujo `moderationState` (`inbox|relevant|archived|discarded`) para separar claramente relevantes, archivadas y descartadas.
+- Migracion aplicada en DB: alta de enum/columna `moderation_state`, mapeo de datos existentes y paso de `reviewed+relevant=false` a `discarded`.
+- Se actualizo la logica de publico para publicar solo `moderationState='relevant'` y se adaptaron APIs/admin actions al nuevo flujo.
+- Se implemento drag and drop en admin para moderacion: reordenar dentro de cada estado y mover herramientas entre Nuevo/Relevantes/Archivadas/Descartadas con persistencia en `moderationPosition`.
+- Se completo gestion de colecciones en panel admin desde la vista principal: crear, editar, publicar/ocultar y eliminar colecciones.
+- Se agrego orden persistente de colecciones (`collections.position`) y endpoint dedicado `PATCH /api/admin/collections/reorder`.
+- Se habilito gestion de herramientas por coleccion desde admin: anadir relevante, quitar y reordenar por drag and drop con persistencia en `collection_tools.position`.
+- Se reforzo `db/schema.sql` con `ALTER TABLE ... ADD COLUMN IF NOT EXISTS position` para compatibilidad de instalaciones existentes.
+- Se agrego compatibilidad adicional en `db/schema.sql` para entornos previos: `ALTER TABLE tools ... ADD COLUMN IF NOT EXISTS "moderationPosition"` (y `moderationState` si faltara).
+- Se corrigio `reorderModerationTools` para castear `status` a `tool_status` y evitar error Postgres `42804` al mover tarjetas entre columnas.
+- Se aplico el esquema actualizado a la base configurada (`DATABASE_URL`) y se valido que vuelvan a responder `/api/public/collections` y `/collections` sin error 500.
+- Se ejecuto smoke UX tecnico (API/UI) con sesion autenticada: mover estados, reordenar colecciones, anadir/reordenar herramientas en colecciones y verificar detalle publico por slug.
+- Se separo visualmente admin en dos secciones (Herramientas/Colecciones) con botones en el header junto a `Toolbox Admin` para navegar rapido entre ambas vistas.
+- Se corrigio el cambio de seccion para que sea reactivo al query param (`?section=tools|collections`), ocultando completamente herramientas al entrar en Colecciones.
+- Se agregaron animaciones de entrada/salida y microtransiciones en panel admin para secciones, cards y elementos de lista (moderacion y colecciones).
+- Se suavizo la animacion del panel admin (menos desplazamiento vertical, duraciones/easing mas progresivos) para evitar transiciones bruscas al cambiar de seccion y al renderizar cards.
+- Se ajusto la transicion entre secciones para evitar solape visual: al cambiar Herramientas/Colecciones primero sale la vista actual y luego entra la siguiente (sin parpadeo cruzado).
+- Se implemento slug estable para herramientas: columna `tools.slug`, generacion automatica al crear, edicion manual en admin y consumo en URLs publicas (`/tools/:slug`) con redireccion canonica desde GUID.
+- Se movio la asignacion de colecciones al flujo inverso: se eliminaron herramientas embebidas de las cards de coleccion y ahora se eligen desde la ficha de herramienta.
+- Se amplio `CustomSelect` con soporte de seleccion multiple y se integro en `tools/[id]` para guardar `collectionIds`.
+- Se actualizo la creacion de colecciones para que sean publicas por defecto (`isPublic=true`) en schema/repo/endpoints y se estilizo el checkbox acorde al look and feel del panel.
+- Se actualizaron cards de coleccion para acciones inferiores icon-only SVG (guardar/eliminar) y propuesta automatica de slug al escribir el nombre.
+- Se aplico la migracion SQL en la base activa y se ejecuto backfill de slugs de herramientas existentes.
+- Se actualizo el boton de crear coleccion para usar iconografia SVG dedicada (`add_24px.svg`) en formato icon-only, consistente con el resto de acciones del panel.
+- Se mejoro la vista publica de colecciones con estado vacio explicito para evitar pantalla sin contexto cuando no existan colecciones publicas.
+- Se robustecio el cliente API publico para intentar primero mismo origen (`Astro.url.origin`) y luego `PUBLIC_API_BASE_URL`, evitando casos donde `/collections` quedaba sin tarjetas por configuracion de base URL.
+- Se agrego mensaje explicito de error en `/collections` cuando falle la carga del backend API.
+- Se agrego sistema de feedback visual de guardado en admin mediante toast flotante global (mensajes para guardar/actualizar/eliminar y cambio de estado).
+- Se actualizaron acciones server para redirigir con `?toast=` tras operaciones de guardado en herramientas y colecciones, mostrando confirmacion inmediata al usuario.
+- Se rediseño la pagina publica `/collections` para mostrar una fila por coleccion (titulo + descripcion) y debajo un carrusel horizontal de tarjetas de herramientas.
+- Se actualizo `GET /api/public/collections` para incluir herramientas relevantes por coleccion (ordenadas por `collection_tools.position`) en la misma respuesta.
+- Se agregaron pistas visuales de scroll en carrusel (degradados laterales + texto "Desliza para ver mas" cuando hay overflow).
+- Se agregaron controles integrados de carrusel con flechas izquierda/derecha sobre cada fila de coleccion, con estados deshabilitados en inicio/fin.
+- Se mejoro interaccion desktop del carrusel permitiendo rueda del raton (delta vertical convertido a scroll horizontal) y se fijo altura consistente de tarjetas en las tiras.
+- Se corrigio la logica de flechas del carrusel para que funcionen de forma fiable con overflow real, actualizacion de estado por carga de imagenes y bloqueo de propagacion de eventos al hacer click.
+- Se ajusto el carrusel de `/collections` para que las cards tengan el mismo formato visual/base que en la home de Toolbox (ancho consistente por tarjeta, sin altura forzada ni recorte extra de descripcion).
+- Se refino la deteccion de overflow/step de desplazamiento para usar el ancho real de tarjeta + gap y mejorar respuesta de flechas en colecciones largas.
+- Se alineo el carrusel a la grilla de Toolbox por breakpoints (1/2/3/4 cards visibles segun ancho) para que solo el excedente haga scroll horizontal.
+- Se cambio el desplazamiento por flechas a "una pagina" (ancho visible del carrusel) y se agrego `ResizeObserver` para recalcular overflow/estados al cambiar viewport/contenido.
+- Se removio el texto auxiliar "Desliza o usa flechas" en carrusel de colecciones y se restablecio altura fija consistente de tarjetas por breakpoint para mantener filas uniformes.
+- Se cambio el carrusel de colecciones para calcular columnas visibles de forma dinamica segun ancho real de ventana/contenedor (mismo comportamiento responsive de Toolbox con min-width 300px), eliminando breakpoints fijos de columnas.
+- Se agrego boton SVG de volver en la vista publica de detalle de coleccion (`/collections/:slug`), con el mismo lenguaje visual de botones icon-only del sitio.
+- Se corrigieron textos visibles en publico/admin con acentuacion en espanol (coleccion, descripcion, busqueda, articulo, publico/publica, accion, etc.).
+- Se agrego aviso de cookies en la web publica con persistencia local (`localStorage`) y boton de aceptacion.
+- Se incorporo footer global en la web publica con datos de contacto (Juan Diego Marquez Tebar, email) y enlaces sociales.
+- Se agregaron iconos SVG fisicos reales de GitHub y LinkedIn para el footer social.
+- Se desactivo el panel de debug de Astro (`devToolbar.enabled = false`) en la app publica.
+- Se actualizo el footer publico para resaltar texto en amarillo y se agrego la leyenda "Hecho con GPT-Codex".
+- Se ajusto el footer publico para usar texto en blanco (nombre/email/leyenda) manteniendo coherencia con el resto de la interfaz.
+- Se mejoro visibilidad del aviso de cookies renderizandolo por defecto y ocultandolo solo si ya existe consentimiento guardado.
+- Se reforzo el banner de cookies para mostrar/ocultar por script de forma explicita (`display:flex/none`) y se elevo su prioridad visual (top + z-index alto) para evitar que quede oculto por otras capas.
+- Se recoloco el banner de cookies dentro del flujo principal de la pagina (debajo del header, modo sticky) para asegurar visibilidad inmediata en cualquier navegador/ventana.
+- Se forzo visibilidad del aviso de cookies con estilos inline de alta prioridad y `show/hide` explicito por script para evitar cualquier ocultacion por cascada/stacking del layout.
+- Se elimino completamente el aviso de cookies de la web publica (markup, script y estilos asociados) por decision de producto.
+- Se reintrodujo el aviso de cookies con un enfoque simplificado y robusto (banner fijo inferior con estilo inline de alta prioridad + control explicito de visibilidad por `localStorage`).
+- Se elimino la logica de `cookieConsent` y el endpoint de aceptacion: el aviso de cookies queda siempre visible en la web publica por decision de producto.
+- Se corrigio el posicionamiento del aviso de cookies para que sea visible siempre (fixed inferior centrado + z-index alto), evitando que quede fuera del viewport.
+- Se cambio el contenedor del aviso de cookies de `aside` a `div` para evitar incompatibilidades de renderizado observadas en el entorno local.
+- Se restauró la aceptación de cookies con persistencia por cookie HTTP (`toolbox_cookie_consent`) mediante `POST /api/cookies/accept`, manteniendo contenedor `div` y mejoras de accesibilidad (`role`, `aria-label`, `aria-describedby`).
+- Se actualizó `AGENTS.md` para reflejar el alcance funcional vigente (moderación por `moderationState`, slugs estables, flujo actual de filtros/admin/colecciones) y dejar explícita la integración Telegram/n8n como fase posterior.

@@ -1,0 +1,261 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { apiGet } from "../../lib/api";
+import { resolveToolMediaUrl } from "../../lib/media";
+import { youtubeEmbedUrl, youtubeThumbnailUrl } from "../../lib/youtube";
+
+let collections: any[] = [];
+let loadError = false;
+
+try {
+  collections = await apiGet<any[]>("/api/public/collections", { origin: Astro.url.origin });
+} catch {
+  loadError = true;
+}
+
+const collectionsWithMedia = collections.map((collection) => ({
+  ...collection,
+  tools: (collection.tools ?? []).map((tool: any) => ({
+    ...tool,
+    mediaUrl: resolveToolMediaUrl(tool)
+  }))
+}));
+---
+
+<BaseLayout title="Colecciones | Toolbox" description="Colecciones públicas curadas de herramientas IA.">
+  <section class="collections-page-rows">
+    <div class="section-head">
+      <h1 class="section-title">Colecciones públicas</h1>
+      <p class="section-subtitle">Selecciones curadas para explorar herramientas por tema o contexto.</p>
+    </div>
+
+    <div class="collections-row-stack">
+      {
+        loadError ? (
+          <article class="collection-card">
+            <h2 class="tool-name" style="font-size:1.35rem;">No pudimos cargar las colecciones</h2>
+            <p class="tool-desc" style="margin:0;">Revisa que el backend de admin/API este levantado y vuelve a intentar.</p>
+          </article>
+        ) : collections.length === 0 ? (
+          <article class="collection-card">
+            <h2 class="tool-name" style="font-size:1.35rem;">Aún no hay colecciones públicas</h2>
+            <p class="tool-desc" style="margin:0;">Crea una colección en admin y márcala como pública para verla aquí.</p>
+          </article>
+        ) : (
+          collectionsWithMedia.map((collection) => (
+            <section class="collection-row-block">
+              <header class="collection-row-head">
+                <div class="section-head" style="gap:.32rem;">
+                  <h2 class="tool-name" style="font-size:1.35rem;">{collection.name}</h2>
+                  <p class="tool-desc" style="margin:0;">{collection.description ?? "Sin descripción"}</p>
+                </div>
+                <a href={`/collections/${collection.slug}`} class="tool-link">Ver colección</a>
+              </header>
+
+              {
+                collection.tools.length === 0 ? (
+                  <article class="collection-card">
+                    <p class="tool-desc" style="margin:0;">Esta colección aún no tiene herramientas públicas.</p>
+                  </article>
+                ) : (
+                  <div class="collection-strip-shell" data-strip-shell>
+                    <button
+                      type="button"
+                      class="carousel-arrow carousel-arrow-prev"
+                      data-carousel-prev
+                      aria-label="Desplazar a la izquierda"
+                      title="Anterior"
+                    >
+                      <span class="icon-mask icon-chevron-left" aria-hidden="true"></span>
+                    </button>
+                    <button
+                      type="button"
+                      class="carousel-arrow carousel-arrow-next"
+                      data-carousel-next
+                      aria-label="Desplazar a la derecha"
+                      title="Siguiente"
+                    >
+                      <span class="icon-mask icon-chevron-right" aria-hidden="true"></span>
+                    </button>
+                    <div class="collection-tools-strip" data-tools-strip>
+                      {collection.tools.map((tool: any, index: number) => (
+                        <article
+                          class="tool-card tool-card-link collection-strip-card"
+                          style={`--i:${index}`}
+                          role="link"
+                          tabindex="0"
+                          data-card-link
+                          data-card-url={tool.url}
+                        >
+                          <div class="tool-media">
+                            {
+                              tool.sourceType === "youtube" && youtubeEmbedUrl(tool.url) ? (
+                                <div
+                                  class="video-inline"
+                                  data-youtube-inline
+                                  data-embed-url={youtubeEmbedUrl(tool.url) ?? ""}
+                                  data-title={tool.title ? `Video de ${tool.title}` : "Video de herramienta"}
+                                  data-no-card-nav
+                                >
+                                  <img
+                                    src={youtubeThumbnailUrl(tool.url) ?? tool.ogImageUrl ?? "https://i.ytimg.com/vi/0/hqdefault.jpg"}
+                                    alt={tool.title ? `Video de ${tool.title}` : "Video de herramienta"}
+                                    loading="lazy"
+                                  />
+                                  <button type="button" class="video-play-btn" data-youtube-play>
+                                    <span class="icon-mask icon-play" aria-hidden="true"></span>
+                                  </button>
+                                </div>
+                              ) : tool.mediaUrl ? (
+                                <img
+                                  src={tool.mediaUrl}
+                                  alt={tool.title ? `Imagen de ${tool.title}` : "Preview de herramienta"}
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div class="tool-placeholder">{(tool.title ?? "AI").slice(0, 2)}</div>
+                              )
+                            }
+                          </div>
+                          <div class="tool-content">
+                            <h3 class="tool-name">{tool.title ?? "Sin título"}</h3>
+                            <p class="tool-meta">{tool.sourceType}</p>
+                            <p class="tool-desc">{tool.description ?? "Sin descripción"}</p>
+                            <div class="tool-footer">
+                              <a href={`/tools/${tool.slug ?? tool.id}`} class="tool-link">Ver detalle</a>
+                            </div>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                )
+              }
+            </section>
+          ))
+        )
+      }
+    </div>
+  </section>
+
+  <script is:inline>
+    (() => {
+      const shells = document.querySelectorAll("[data-strip-shell]");
+
+      const getNumericGap = (shell) => {
+        const styles = window.getComputedStyle(shell);
+        const raw = styles.getPropertyValue("--carousel-gap").trim();
+        if (raw.endsWith("rem")) {
+          const rem = Number.parseFloat(raw);
+          const rootSize = Number.parseFloat(window.getComputedStyle(document.documentElement).fontSize || "16") || 16;
+          return rem * rootSize;
+        }
+        if (raw.endsWith("px")) {
+          return Number.parseFloat(raw) || 16;
+        }
+        return Number.parseFloat(raw) || 16;
+      };
+
+      const updateCols = (shell) => {
+        const strip = shell.querySelector("[data-tools-strip]");
+        if (!(strip instanceof HTMLElement)) return;
+
+        const minCardWidth = 300;
+        const gap = getNumericGap(shell);
+        const available = strip.clientWidth;
+        const cols = Math.max(1, Math.floor((available + gap) / (minCardWidth + gap)));
+        shell.style.setProperty("--carousel-cols", String(cols));
+      };
+
+      const getStep = (strip) => Math.max(strip.clientWidth, 260);
+
+      const updateShell = (shell) => {
+        updateCols(shell);
+
+        const strip = shell.querySelector("[data-tools-strip]");
+        const prev = shell.querySelector("[data-carousel-prev]");
+        const next = shell.querySelector("[data-carousel-next]");
+        if (!strip || !prev || !next) return;
+
+        const overflowDelta = strip.scrollWidth - strip.clientWidth;
+        const hasOverflow = overflowDelta > 10;
+        const atStart = strip.scrollLeft < 8;
+        const atEnd = strip.scrollWidth - (strip.scrollLeft + strip.clientWidth) < 8;
+
+        shell.classList.toggle("has-overflow", hasOverflow);
+        shell.classList.toggle("at-start", atStart);
+        shell.classList.toggle("at-end", atEnd);
+
+        prev.classList.toggle("is-disabled", !hasOverflow || atStart);
+        next.classList.toggle("is-disabled", !hasOverflow || atEnd);
+        prev.setAttribute("aria-disabled", String(!hasOverflow || atStart));
+        next.setAttribute("aria-disabled", String(!hasOverflow || atEnd));
+      };
+
+      const moveStrip = (shell, direction) => {
+        const strip = shell.querySelector("[data-tools-strip]");
+        const prev = shell.querySelector("[data-carousel-prev]");
+        const next = shell.querySelector("[data-carousel-next]");
+        if (!strip || !prev || !next) return;
+
+        if ((direction < 0 && prev.classList.contains("is-disabled")) || (direction > 0 && next.classList.contains("is-disabled"))) {
+          return;
+        }
+
+        const target = Math.max(0, strip.scrollLeft + getStep(strip) * direction);
+        strip.scrollTo({ left: target, behavior: "smooth" });
+
+        window.setTimeout(() => updateShell(shell), 180);
+      };
+
+      shells.forEach((shell) => {
+        const strip = shell.querySelector("[data-tools-strip]");
+        const prev = shell.querySelector("[data-carousel-prev]");
+        const next = shell.querySelector("[data-carousel-next]");
+        if (!strip || !prev || !next) return;
+
+        prev.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          moveStrip(shell, -1);
+        });
+
+        next.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          moveStrip(shell, 1);
+        });
+
+        prev.addEventListener("pointerdown", (event) => event.stopPropagation());
+        next.addEventListener("pointerdown", (event) => event.stopPropagation());
+
+        strip.addEventListener("scroll", () => updateShell(shell), { passive: true });
+        strip.addEventListener(
+          "wheel",
+          (event) => {
+            const hasOverflow = strip.scrollWidth - strip.clientWidth > 10;
+            if (!hasOverflow) return;
+
+            const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+            if (delta === 0) return;
+
+            event.preventDefault();
+            strip.scrollBy({ left: delta, behavior: "auto" });
+          },
+          { passive: false }
+        );
+
+        strip.querySelectorAll("img").forEach((img) => {
+          img.addEventListener("load", () => updateShell(shell), { passive: true });
+        });
+
+        const observer = new ResizeObserver(() => updateShell(shell));
+        observer.observe(strip);
+      });
+
+      const run = () => shells.forEach((shell) => updateShell(shell));
+      run();
+      window.addEventListener("resize", run, { passive: true });
+    })();
+  </script>
+</BaseLayout>
