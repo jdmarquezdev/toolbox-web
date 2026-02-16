@@ -9,6 +9,7 @@ import {
   setToolModerationState,
   updateCollection
 } from "@toolbox/core/repo";
+import { adminPath } from "$lib/paths";
 import { redirect } from "@sveltejs/kit";
 
 function slugify(value: string) {
@@ -51,7 +52,7 @@ export const actions: Actions = {
       createdVia: "admin"
     });
 
-    throw redirect(303, "/?toast=tool-created");
+    throw redirect(303, adminPath("/?toast=tool-created"));
   },
   setState: async ({ request }) => {
     const data = await request.formData();
@@ -63,7 +64,7 @@ export const actions: Actions = {
     }
 
     await setToolModerationState(id, state);
-    throw redirect(303, state === "relevant" ? "/?toast=state-updated#relevantes" : state === "archived" ? "/?toast=state-updated#archivadas" : "/?toast=state-updated#descartadas");
+    throw redirect(303, state === "relevant" ? adminPath("/?toast=state-updated#relevantes") : state === "archived" ? adminPath("/?toast=state-updated#archivadas") : adminPath("/?toast=state-updated#descartadas"));
   },
   createCollection: async ({ request }) => {
     const data = await request.formData();
@@ -81,7 +82,7 @@ export const actions: Actions = {
       isPublic
     });
 
-    throw redirect(303, "/?section=collections&toast=collection-created");
+    throw redirect(303, adminPath("/?section=collections&toast=collection-created"));
   },
   updateCollection: async ({ request }) => {
     const data = await request.formData();
@@ -100,7 +101,7 @@ export const actions: Actions = {
       isPublic
     });
 
-    throw redirect(303, "/?section=collections&toast=collection-updated");
+    throw redirect(303, adminPath("/?section=collections&toast=collection-updated"));
   },
   deleteCollection: async ({ request }) => {
     const data = await request.formData();
@@ -108,6 +109,6 @@ export const actions: Actions = {
     if (!id) return { ok: false };
 
     await deleteCollection(id);
-    throw redirect(303, "/?section=collections&toast=collection-deleted");
+    throw redirect(303, adminPath("/?section=collections&toast=collection-deleted"));
   }
 };

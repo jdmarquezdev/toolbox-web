@@ -1,6 +1,7 @@
 <script lang="ts">
   import { cubicInOut, cubicOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
+  import { adminPath } from "$lib/paths";
 
   type ViewKey = "inbox" | "relevantes" | "archivadas" | "descartadas";
   type ModerationState = "inbox" | "relevant" | "archived" | "discarded";
@@ -100,7 +101,7 @@
 
     isSavingModeration = true;
     try {
-      await fetch("/api/admin/tools/reorder", {
+      await fetch(adminPath("/api/admin/tools/reorder"), {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ items })
@@ -173,7 +174,7 @@
     collections = list;
     draggedCollectionId = null;
 
-    await fetch("/api/admin/collections/reorder", {
+    await fetch(adminPath("/api/admin/collections/reorder"), {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ ids: list.map((item: any) => item.id) })
@@ -310,7 +311,7 @@
                 {/each}
               </div>
               <a
-                href={`/tools/${tool.id}`}
+                href={adminPath(`/tools/${tool.id}`)}
                 class="btn primary icon-only-btn"
                 aria-label="Editar ficha"
                 title="Editar ficha"

@@ -9,6 +9,7 @@ import {
   setToolCollections,
   setToolModerationState
 } from "@toolbox/core/repo";
+import { adminPath } from "$lib/paths";
 import { error, redirect } from "@sveltejs/kit";
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -53,11 +54,11 @@ export const actions: Actions = {
       await setToolModerationState(params.id, moderationState);
     }
 
-    throw redirect(303, `/tools/${params.id}?toast=tool-updated`);
+    throw redirect(303, adminPath(`/tools/${params.id}?toast=tool-updated`));
   },
   delete: async ({ params }) => {
     await deleteTool(params.id);
-    throw redirect(303, "/?toast=tool-deleted");
+    throw redirect(303, adminPath("/?toast=tool-deleted"));
   },
   setState: async ({ request, params }) => {
     const data = await request.formData();
@@ -67,6 +68,6 @@ export const actions: Actions = {
       await setToolModerationState(params.id, state);
     }
 
-    throw redirect(303, `/tools/${params.id}?toast=state-updated`);
+    throw redirect(303, adminPath(`/tools/${params.id}?toast=state-updated`));
   }
 };

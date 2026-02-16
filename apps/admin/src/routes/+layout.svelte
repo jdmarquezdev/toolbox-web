@@ -70,7 +70,7 @@
       <a class="header-link" href="/" target="_blank" rel="noreferrer">PÚBLICO</a>
     </div>
     {#if data.isAuthed}
-      <form method="post" action="/api/auth/logout">
+      <form method="post" action={adminPath("/api/auth/logout")}>
         <button class="btn primary icon-only-btn" type="submit" aria-label="Cerrar sesión" title="Salir">
           <span class="icon-mask icon-logout" aria-hidden="true"></span>
         </button>
