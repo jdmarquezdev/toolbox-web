@@ -19,6 +19,7 @@
     "lint": "bun run --filter @toolbox/admin lint && bun run --filter @toolbox/public lint"
   },
   "devDependencies": {
+    "@types/node": "^25.2.3",
     "typescript": "5.7.2"
   }
 }
