@@ -86,3 +86,4 @@
 - Se corrigió el flujo de autenticación del admin desplegado en subruta (`/admin`): redirecciones de login/logout y enlaces internos del panel ahora apuntan a la base de admin en producción, evitando saltos a `/login` o `/` fuera del panel.
 - Se ajustaron formularios y llamadas cliente del panel admin para usar rutas API bajo subruta (`/admin/api/*`) en producción, corrigiendo el 404 en login y reordenaciones cuando el servicio admin se publica detrás de `/admin`.
 - Se configuró `kit.paths.base = "/admin"` en `apps/admin/svelte.config.js` para que los assets del panel (CSS/JS de `_app`) se sirvan bajo `/admin/*` y no rompan estilos/scripts al desplegar en subruta.
+- Se retiró `kit.paths.base = "/admin"` al detectar despliegue con reverse proxy que ya mapea `/admin` hacia la raíz de la app admin; mantener ese `base` causaba `Not found` en `/admin`.
