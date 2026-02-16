@@ -66,7 +66,7 @@
           Colecciones
         </a>
       {/if}
-      <a class="header-link" href="http://localhost:4321" target="_blank" rel="noreferrer">PÚBLICO</a>
+      <a class="header-link" href="/" target="_blank" rel="noreferrer">PÚBLICO</a>
     </div>
     {#if data.isAuthed}
       <form method="post" action="/api/auth/logout">

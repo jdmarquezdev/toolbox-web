@@ -116,7 +116,7 @@
 
       <div class="edit-actions-row">
         <div class="action-cluster edit-left-actions">
-          <a href={`http://localhost:4321/tools/${data.tool.slug ?? data.tool.id}`} target="_blank" rel="noreferrer" class="btn primary btn-xs">Ver ficha pública</a>
+          <a href={`/tools/${data.tool.slug ?? data.tool.id}`} target="_blank" rel="noreferrer" class="btn primary btn-xs">Ver ficha pública</a>
         </div>
         <div class="action-cluster edit-action-group">
           <button class="btn btn-xs" type="submit" formaction="?/setState" name="state" value="relevant">Relevante</button>
