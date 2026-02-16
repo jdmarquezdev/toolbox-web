@@ -81,3 +81,4 @@
 - Se cambio el contenedor del aviso de cookies de `aside` a `div` para evitar incompatibilidades de renderizado observadas en el entorno local.
 - Se restauró la aceptación de cookies con persistencia por cookie HTTP (`toolbox_cookie_consent`) mediante `POST /api/cookies/accept`, manteniendo contenedor `div` y mejoras de accesibilidad (`role`, `aria-label`, `aria-describedby`).
 - Se actualizó `AGENTS.md` para reflejar el alcance funcional vigente (moderación por `moderationState`, slugs estables, flujo actual de filtros/admin/colecciones) y dejar explícita la integración Telegram/n8n como fase posterior.
+- Se corrigió la configuración de build de Astro en `apps/public/astro.config.mjs` definiendo explícitamente `build.server` y `build.client` para evitar fallo de build (`fileURLToPath` con valor `undefined`) en despliegue con Nixpacks/Coolify.
