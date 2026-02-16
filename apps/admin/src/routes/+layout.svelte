@@ -1,5 +1,6 @@
 <script lang="ts">
   import "$lib/styles.css";
+  import { ADMIN_BASE_PATH, adminPath } from "$lib/paths";
   let { children, data } = $props();
   let toastVisible = $state(false);
   let toastMessage = $state("");
@@ -54,15 +55,15 @@
 <div class="shell">
   <header class="topbar">
     <div class="header-nav">
-      <a href="/" class="header-brand">Toolbox Admin</a>
+      <a href={ADMIN_BASE_PATH} class="header-brand">Toolbox Admin</a>
       {#if data.isAuthed}
         <a
           class={`header-link ${data.section === "tools" || data.pathname.startsWith("/tools/") ? "is-active" : ""}`}
-          href="/"
+          href={ADMIN_BASE_PATH}
         >
           Herramientas
         </a>
-        <a class={`header-link ${data.section === "collections" ? "is-active" : ""}`} href="/?section=collections">
+        <a class={`header-link ${data.section === "collections" ? "is-active" : ""}`} href={adminPath("/?section=collections")}>
           Colecciones
         </a>
       {/if}

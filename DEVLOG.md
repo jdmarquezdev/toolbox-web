@@ -83,3 +83,4 @@
 - Se actualizó `AGENTS.md` para reflejar el alcance funcional vigente (moderación por `moderationState`, slugs estables, flujo actual de filtros/admin/colecciones) y dejar explícita la integración Telegram/n8n como fase posterior.
 - Se corrigió la configuración de build de Astro en `apps/public/astro.config.mjs` definiendo explícitamente `build.server` y `build.client` para evitar fallo de build (`fileURLToPath` con valor `undefined`) en despliegue con Nixpacks/Coolify.
 - Se eliminaron URLs hardcodeadas a `localhost` en enlaces de navegación entre público/admin para usar rutas del mismo dominio en producción (`/admin`, `/`, `/tools/:slug`), corrigiendo que el botón de panel abriese el host local tras desplegar.
+- Se corrigió el flujo de autenticación del admin desplegado en subruta (`/admin`): redirecciones de login/logout y enlaces internos del panel ahora apuntan a la base de admin en producción, evitando saltos a `/login` o `/` fuera del panel.

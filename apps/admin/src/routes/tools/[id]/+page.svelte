@@ -1,5 +1,6 @@
 <script lang="ts">
   import CustomSelect from "$lib/components/CustomSelect.svelte";
+  import { ADMIN_BASE_PATH } from "$lib/paths";
 
   let { data } = $props();
 
@@ -28,7 +29,7 @@
 <section class="section-gap">
   <div class="row-between">
     <h1 class="page-title">Editar herramienta</h1>
-    <a href="/" class="btn primary icon-only-btn" aria-label="Volver al panel" title="Volver al panel">
+    <a href={ADMIN_BASE_PATH} class="btn primary icon-only-btn" aria-label="Volver al panel" title="Volver al panel">
       <span class="icon-mask icon-back" aria-hidden="true"></span>
     </a>
   </div>
