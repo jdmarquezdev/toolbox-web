@@ -11,3 +11,5 @@ packages/*/node_modules/
 .env.local
 coverage/
 *.log
+DEVLOG.md
+AUDIT.md
