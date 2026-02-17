@@ -19,6 +19,7 @@ Toolbox es una plataforma personal para capturar, moderar y publicar herramienta
 ### Captura y deduplicación
 
 - Alta de herramientas por URL (`POST /api/tools`).
+- Captura directa por bookmarklet autenticado (`GET /admin/capture?url=...`).
 - Enriquecimiento OG automático (`title`, `description`, `ogImageUrl`, `faviconUrl`).
 - Normalización de URL.
 - Dedupe con actualización de `seenCount` y `lastSeenAt`.
@@ -103,6 +104,17 @@ Toolbox es una plataforma personal para capturar, moderar y publicar herramienta
 ### Ingestión
 
 - `POST /api/tools` (sesión owner o `x-ingest-token`)
+- `GET /admin/capture?url=...` (sesión owner, pensado para bookmarklet)
+
+### Screenshot worker (opcional)
+
+- Política actual: solo genera `screenshotUrl` cuando falta `ogImageUrl` válida.
+- Activa con `SCREENSHOT_WORKER_ENABLED=true`.
+- Ejecuta manualmente:
+
+```bash
+bun run screenshots:worker
+```
 
 ## Arranque local
 
@@ -154,6 +166,12 @@ Actualmente queda preparada la base de ingestión por token:
 
 - `INGEST_TOKEN`
 - `POST /api/tools`
+
+## Nota sobre rutas admin
+
+- El prefijo del panel se controla con `ADMIN_BASE_PATH`.
+- En local (app admin en raíz), déjalo vacío: `ADMIN_BASE_PATH=`.
+- En despliegue bajo subruta, configúralo explícitamente: `ADMIN_BASE_PATH=/admin`.
 
 ## Licencia
 

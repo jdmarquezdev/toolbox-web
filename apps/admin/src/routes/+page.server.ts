@@ -20,6 +20,10 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function normalizeView(value: string) {
+  return value === "inbox" || value === "relevantes" || value === "archivadas" || value === "descartadas" ? value : "inbox";
+}
+
 export const load: PageServerLoad = async ({ url }) => {
   const inbox = await getAdminTools("inbox");
   const relevant = await getAdminTools("relevant");
@@ -58,13 +62,14 @@ export const actions: Actions = {
     const data = await request.formData();
     const id = String(data.get("id") ?? "");
     const state = String(data.get("state") ?? "");
+    const view = normalizeView(String(data.get("view") ?? ""));
 
     if (!id || (state !== "relevant" && state !== "archived" && state !== "discarded")) {
       return { ok: false };
     }
 
     await setToolModerationState(id, state);
-    throw redirect(303, state === "relevant" ? adminPath("/?toast=state-updated#relevantes") : state === "archived" ? adminPath("/?toast=state-updated#archivadas") : adminPath("/?toast=state-updated#descartadas"));
+    throw redirect(303, adminPath(`/?toast=state-updated#${view}`));
   },
   createCollection: async ({ request }) => {
     const data = await request.formData();

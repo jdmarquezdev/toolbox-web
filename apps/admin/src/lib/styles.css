@@ -151,6 +151,11 @@ a {
   -webkit-mask-image: url("/icons/add_24px.svg");
 }
 
+.icon-copy {
+  mask-image: url("/icons/content_copy_24px.svg");
+  -webkit-mask-image: url("/icons/content_copy_24px.svg");
+}
+
 .card {
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -167,6 +172,9 @@ a {
   color: var(--text);
   border-radius: 999px;
   padding: 0.52rem 0.8rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+  line-height: 1;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -398,6 +406,7 @@ a {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 0.5rem;
   flex: 1;
+  min-width: 0;
 }
 
 .tool-title {
@@ -410,6 +419,8 @@ a {
   margin: 0;
   font-size: 1rem;
   color: var(--text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tool-meta {
@@ -418,6 +429,8 @@ a {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tool-desc {
@@ -425,6 +438,8 @@ a {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tool-footer {
@@ -433,12 +448,15 @@ a {
   justify-content: space-between;
   align-items: center;
   gap: 0.4rem;
+  min-width: 0;
 }
 
 .state-actions {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 0.35rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .state-actions .btn {
@@ -589,6 +607,36 @@ a {
   margin-bottom: 1rem;
 }
 
+.bookmarklet-actions .btn {
+  min-width: 190px;
+  justify-content: center;
+}
+
+.bookmarklet-code-wrap {
+  position: relative;
+}
+
+.bookmarklet-copy-btn {
+  position: absolute;
+  top: 2rem;
+  right: 0.55rem;
+  width: 30px;
+  height: 30px;
+}
+
+.bookmarklet-copy-btn .icon-mask {
+  width: 14px;
+  height: 14px;
+}
+
+.bookmarklet-copied {
+  position: absolute;
+  right: 3.3rem;
+  top: 2.65rem;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
 .login-card {
   max-width: 440px;
   margin: 2rem auto;
@@ -688,4 +736,5 @@ textarea:focus {
   .state-actions {
     flex-wrap: wrap;
   }
+
 }

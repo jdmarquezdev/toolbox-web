@@ -74,9 +74,7 @@ const toolsWithMedia = collection.tools.map((tool: any) => ({
               <h2 class="tool-name">{tool.title ?? "Sin título"}</h2>
               <p class="tool-meta">{tool.sourceType}</p>
               <p class="tool-desc">{tool.description ?? "Sin descripción"}</p>
-              <div class="tool-footer">
-                <a href={`/tools/${tool.slug ?? tool.id}`} class="tool-link">Ver detalle</a>
-              </div>
+              <div class="tool-footer">{tool.slug ? <a href={`/tools/${tool.slug}`} class="tool-link">Ver detalle</a> : null}</div>
             </div>
           </article>
       ))}

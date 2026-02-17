@@ -1,9 +1,10 @@
 import { createSessionToken } from "@toolbox/core/auth";
 import { env } from "@toolbox/core/env";
-import { ADMIN_BASE_PATH, adminPath } from "$lib/paths";
+import { adminPath } from "$lib/paths";
+import type { RequestEvent } from "@sveltejs/kit";
 import { redirect } from "@sveltejs/kit";
 
-export async function POST({ request, cookies }) {
+export async function POST({ request, cookies }: RequestEvent) {
   const data = await request.formData();
   const email = String(data.get("email") ?? "");
   const password = String(data.get("password") ?? "");
@@ -20,5 +21,5 @@ export async function POST({ request, cookies }) {
     maxAge: 60 * 60 * 24 * 14
   });
 
-  throw redirect(302, ADMIN_BASE_PATH);
+  throw redirect(302, adminPath("/"));
 }

@@ -1,10 +1,12 @@
 <script lang="ts">
   import "$lib/styles.css";
-  import { ADMIN_BASE_PATH, adminPath } from "$lib/paths";
+  import { adminPath } from "$lib/paths";
   let { children, data } = $props();
   let toastVisible = $state(false);
   let toastMessage = $state("");
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
+  const bookmarkletActive = data.pathname === "/bookmarklet" || data.pathname.startsWith("/bookmarklet/");
+  const toolsActive = (data.section === "tools" || data.pathname.startsWith("/tools/")) && !bookmarkletActive;
 
   const applyTheme = `
     (() => {
@@ -55,16 +57,19 @@
 <div class="shell">
   <header class="topbar">
     <div class="header-nav">
-      <a href={ADMIN_BASE_PATH} class="header-brand">Toolbox Admin</a>
+      <a href={adminPath("/")} class="header-brand">Toolbox Admin</a>
       {#if data.isAuthed}
         <a
-          class={`header-link ${data.section === "tools" || data.pathname.startsWith("/tools/") ? "is-active" : ""}`}
-          href={ADMIN_BASE_PATH}
+          class={`header-link ${toolsActive ? "is-active" : ""}`}
+          href={adminPath("/")}
         >
           Herramientas
         </a>
         <a class={`header-link ${data.section === "collections" ? "is-active" : ""}`} href={adminPath("/?section=collections")}>
           Colecciones
+        </a>
+        <a class={`header-link ${bookmarkletActive ? "is-active" : ""}`} href={adminPath("/bookmarklet")}>
+          Bookmarklet
         </a>
       {/if}
       <a class="header-link" href="/" target="_blank" rel="noreferrer">PÚBLICO</a>

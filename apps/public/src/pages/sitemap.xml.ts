@@ -9,7 +9,9 @@ export const GET: APIRoute = async () => {
   const urls = [
     "https://toolbox.jdmarquez.dev",
     "https://toolbox.jdmarquez.dev/collections",
-    ...tools.map((tool: any) => `https://toolbox.jdmarquez.dev/tools/${tool.id}`)
+    ...tools
+      .filter((tool: any) => Boolean(tool.slug))
+      .map((tool: any) => `https://toolbox.jdmarquez.dev/tools/${tool.slug}`)
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

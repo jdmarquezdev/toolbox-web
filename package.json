@@ -16,7 +16,8 @@
     "dev:public": "bun run --filter @toolbox/public dev",
     "build": "bun run --filter @toolbox/core build && bun run --filter @toolbox/admin build && bun run --filter @toolbox/public build",
     "check": "bun run --filter @toolbox/admin check && bun run --filter @toolbox/public check",
-    "lint": "bun run --filter @toolbox/admin lint && bun run --filter @toolbox/public lint"
+    "lint": "bun run --filter @toolbox/admin lint && bun run --filter @toolbox/public lint",
+    "screenshots:worker": "bun run --filter @toolbox/core screenshots:worker"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",

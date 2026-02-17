@@ -112,7 +112,7 @@ const filterPanelClass = filtersOpen ? "filter-panel is-open" : "filter-panel";
             <p class="tool-meta">{tool.sourceType}</p>
             <p class="tool-desc">{tool.description ?? "Sin descripción"}</p>
             <div class="tool-footer">
-                <a href={`/tools/${tool.slug ?? tool.id}`} class="tool-link">Ver detalle</a>
+                {tool.slug ? <a href={`/tools/${tool.slug}`} class="tool-link">Ver detalle</a> : null}
               </div>
             </div>
           </article>

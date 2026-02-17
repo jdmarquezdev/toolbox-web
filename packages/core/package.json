@@ -13,7 +13,8 @@
     "./types": "./src/types.ts"
   },
   "scripts": {
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit",
+    "screenshots:worker": "bun ./src/screenshot-worker.ts"
   },
   "dependencies": {
     "dotenv": "16.4.5",

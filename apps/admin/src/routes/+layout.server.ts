@@ -7,7 +7,11 @@ const TOAST_MESSAGES: Record<string, string> = {
   "state-updated": "Estado actualizado.",
   "collection-created": "Colección guardada.",
   "collection-updated": "Colección actualizada.",
-  "collection-deleted": "Colección eliminada."
+  "collection-deleted": "Colección eliminada.",
+  "capture-created": "Enlace capturado en inbox.",
+  "capture-deduped": "Ya existía: se incrementó seenCount.",
+  "capture-invalid": "No se pudo capturar esa URL.",
+  "capture-missing": "Falta la URL para capturar."
 };
 
 export const load: LayoutServerLoad = async ({ cookies, url }) => {

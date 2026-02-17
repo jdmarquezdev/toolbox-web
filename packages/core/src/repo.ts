@@ -13,6 +13,17 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function isAbsoluteHttpUrl(value: string | null | undefined) {
+  if (!value) return false;
+
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 async function ensureUniqueToolSlug(raw: string, excludeId?: string) {
   const base = slugify(raw) || "tool";
   let candidate = base;
@@ -59,7 +70,7 @@ export async function getToolByIdOrSlug(idOrSlug: string): Promise<ToolRow | nul
     select t.*
     from tools t
     where lower(coalesce(t.slug, '')) = lower(${idOrSlug})
-       or t.id = ${idOrSlug}
+       or t.id::text = ${idOrSlug}
     limit 1
   `;
 
@@ -107,6 +118,7 @@ export async function createOrBumpTool(input: {
 
   const metadata = await fetchUrlMetadata(normalized);
   const sourceType = detectSourceType(normalized);
+  const previewStatus = isAbsoluteHttpUrl(metadata.ogImageUrl) ? "none" : "pending";
   let slugBase = metadata.title ?? "";
 
   if (!slugBase) {
@@ -156,7 +168,7 @@ export async function createOrBumpTool(input: {
       ${metadata.description},
       ${metadata.faviconUrl},
       ${metadata.ogImageUrl},
-      'pending',
+      ${previewStatus},
       'unknown',
       false,
       'inbox',
@@ -508,6 +520,37 @@ export async function addToolToCollection(collectionId: string, toolId: string) 
       (select coalesce(max(position), -1) + 1 from collection_tools where "collectionId" = ${collectionId})
     )
     on conflict ("collectionId", "toolId") do nothing
+  `;
+}
+
+export async function getScreenshotWorkerCandidates(limit = 20): Promise<Array<Pick<ToolRow, "id" | "url" | "ogImageUrl">>> {
+  return sql<Array<Pick<ToolRow, "id" | "url" | "ogImageUrl">>>`
+    select id, url, "ogImageUrl"
+    from tools
+    where (
+      (
+        "screenshotUrl" is null
+        and (
+          "ogImageUrl" is null
+          or "ogImageUrl" !~* '^https?://'
+        )
+        and "previewStatus" in ('pending', 'none', 'failed')
+      )
+      or coalesce("screenshotUrl", '') like 'https://s.wordpress.com/mshots/v1/%'
+    )
+    order by "createdAt" desc
+    limit ${Math.max(1, Math.min(limit, 200))}
+  `;
+}
+
+export async function setToolScreenshotResult(id: string, input: { screenshotUrl?: string | null; status: "ready" | "failed" }) {
+  await sql`
+    update tools
+    set
+      "screenshotUrl" = ${input.screenshotUrl ?? null},
+      "previewStatus" = ${input.status},
+      "updatedAt" = now()
+    where id = ${id}
   `;
 }
 

@@ -18,6 +18,10 @@ export const load: PageServerLoad = async ({ params }) => {
     throw error(404, "Tool not found");
   }
 
+  if (tool.slug && tool.slug !== params.id) {
+    throw redirect(302, adminPath(`/tools/${tool.slug}`));
+  }
+
   const [collections, selectedCollectionIds] = await Promise.all([listCollections(), getCollectionIdsForTool(tool.id)]);
 
   return { tool, collections, selectedCollectionIds };
@@ -25,6 +29,9 @@ export const load: PageServerLoad = async ({ params }) => {
 
 export const actions: Actions = {
   save: async ({ request, params }) => {
+    const tool = await getToolByIdOrSlug(params.id);
+    if (!tool) throw error(404, "Tool not found");
+
     const data = await request.formData();
 
     const title = String(data.get("title") ?? "").trim();
@@ -39,7 +46,7 @@ export const actions: Actions = {
       .map((value) => String(value).trim())
       .filter((value) => value.length > 0);
 
-    await patchTool(params.id, {
+    await patchTool(tool.id, {
       title: title || null,
       slug: slug || null,
       description: description || null,
@@ -48,26 +55,35 @@ export const actions: Actions = {
       notesPublic: notesPublic || null
     });
 
-    await setToolCollections(params.id, collectionIds);
+    const reloaded = await getToolByIdOrSlug(tool.id);
+    if (!reloaded) throw error(404, "Tool not found");
+
+    await setToolCollections(reloaded.id, collectionIds);
 
     if (moderationState === "relevant" || moderationState === "archived" || moderationState === "discarded") {
-      await setToolModerationState(params.id, moderationState);
+      await setToolModerationState(reloaded.id, moderationState);
     }
 
-    throw redirect(303, adminPath(`/tools/${params.id}?toast=tool-updated`));
+    throw redirect(303, adminPath(`/tools/${reloaded.slug ?? reloaded.id}?toast=tool-updated`));
   },
   delete: async ({ params }) => {
-    await deleteTool(params.id);
+    const tool = await getToolByIdOrSlug(params.id);
+    if (!tool) throw error(404, "Tool not found");
+
+    await deleteTool(tool.id);
     throw redirect(303, adminPath("/?toast=tool-deleted"));
   },
   setState: async ({ request, params }) => {
+    const tool = await getToolByIdOrSlug(params.id);
+    if (!tool) throw error(404, "Tool not found");
+
     const data = await request.formData();
     const state = String(data.get("state") ?? "");
 
     if (state === "relevant" || state === "archived" || state === "discarded") {
-      await setToolModerationState(params.id, state);
+      await setToolModerationState(tool.id, state);
     }
 
-    throw redirect(303, adminPath(`/tools/${params.id}?toast=state-updated`));
+    throw redirect(303, adminPath(`/tools/${tool.slug ?? tool.id}?toast=state-updated`));
   }
 };

@@ -115,9 +115,11 @@
         />
       </label>
 
-      <div class="edit-actions-row">
-        <div class="action-cluster edit-left-actions">
-          <a href={`/tools/${data.tool.slug ?? data.tool.id}`} target="_blank" rel="noreferrer" class="btn primary btn-xs">Ver ficha pública</a>
+        <div class="edit-actions-row">
+          <div class="action-cluster edit-left-actions">
+          {#if data.tool.slug}
+            <a href={`/tools/${data.tool.slug}`} target="_blank" rel="noreferrer" class="btn primary btn-xs">Ver ficha pública</a>
+          {/if}
         </div>
         <div class="action-cluster edit-action-group">
           <button class="btn btn-xs" type="submit" formaction="?/setState" name="state" value="relevant">Relevante</button>

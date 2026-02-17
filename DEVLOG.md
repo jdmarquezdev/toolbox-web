@@ -88,3 +88,15 @@
 - Se configuró `kit.paths.base = "/admin"` en `apps/admin/svelte.config.js` para que los assets del panel (CSS/JS de `_app`) se sirvan bajo `/admin/*` y no rompan estilos/scripts al desplegar en subruta.
 - Se retiró `kit.paths.base = "/admin"` al detectar despliegue con reverse proxy que ya mapea `/admin` hacia la raíz de la app admin; mantener ese `base` causaba `Not found` en `/admin`.
 - Se definió `kit.appDir = "admin/_app"` en `apps/admin/svelte.config.js` para servir los bundles CSS/JS del panel bajo `/admin/_app/*` sin mover las rutas de la app, compatible con proxy que publica admin en `/admin`.
+- Se detectó en despliegue que `https://toolbox.jdmarquez.dev/admin/` (con slash final) carga estilos correctamente y `.../admin` puede fallar; se deja pendiente como siguiente tarea fijar canónica por redirección (`/admin` -> `/admin/`) para evitar regresiones de assets.
+- Se aplicó canónica de admin: solicitudes a `/admin` redirigen permanentemente a `/admin/`, y enlaces de entrada/login del panel se alinearon para usar `/admin/` de forma consistente.
+- Se corrigió la resolución pública de herramientas por `idOrSlug` evitando comparación UUID inválida en Postgres (`id::text`), solucionando casos en producción donde `Ver detalle` redirigía sin mostrar ficha.
+- Se ajustó el cambio de estado rápido en cards del panel para preservar la vista actual (Nuevo/Relevantes/Archivadas/Descartadas) tras guardar, en lugar de saltar automáticamente a otra pestaña.
+- Se implementó captura directa por bookmarklet sin CORS/token en cliente: nueva ruta autenticada `GET /admin/capture?url=...` que guarda en inbox con `createdVia='bookmarklet'` y feedback por toast (creado/dedupe/error).
+- Se añadió bloque de ayuda en el panel admin con botón bookmarklet para guardar la URL actual desde cualquier página en una nueva pestaña hacia `/admin/capture`.
+- Se activó política de preview para screenshots: al crear herramienta, `previewStatus` pasa a `pending` solo cuando falta `ogImageUrl` válida; si hay OG válida queda en `none`.
+- Se añadió worker opcional de screenshots (`bun run screenshots:worker`) que procesa candidatas sin OG válida, asigna `screenshotUrl` (mshots) y actualiza `previewStatus` a `ready/failed`.
+- Se unificó criterio de rutas admin eliminando bifurcación por entorno en `adminPath`: ahora el prefijo depende solo de `ADMIN_BASE_PATH` (vacío en local, `/admin` en producción si aplica).
+- Se movió la ayuda de bookmarklet a un acceso discreto en cabecera del admin con página dedicada (`/bookmarklet`), retirando la tarjeta grande del inbox para reducir ruido visual y mejorar fiabilidad.
+- Se reforzó el uso canónico de slugs en URLs públicas: enlaces de "Ver detalle" y sitemap ahora usan `tool.slug` (sin fallback visible a GUID), alineado con `/tools/:slug`.
+- En admin, los accesos a edición desde cards ahora apuntan al slug cuando existe y la ruta de edición redirige canónicamente a slug; acciones de guardar/estado/borrar resuelven por `idOrSlug` para mantener compatibilidad.

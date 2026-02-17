@@ -60,6 +60,7 @@
       stored === "relevantes" || stored === "archivadas" || stored === "descartadas" || stored === "inbox" ? stored : null;
 
     selectedView = (hashView as ViewKey) ?? (storedView as ViewKey) ?? "inbox";
+
   }
 
   $effect(() => {
@@ -219,6 +220,7 @@
       <span class="icon-mask icon-save" aria-hidden="true"></span>
     </button>
   </form>
+
 </section>
 
 <section class="section-gap">
@@ -306,12 +308,13 @@
                   <form method="post" action="?/setState">
                     <input type="hidden" name="id" value={tool.id} />
                     <input type="hidden" name="state" value={action.value} />
+                    <input type="hidden" name="view" value={selectedView} />
                     <button class="btn btn-xs" type="submit">{action.label}</button>
                   </form>
                 {/each}
               </div>
               <a
-                href={adminPath(`/tools/${tool.id}`)}
+                href={adminPath(`/tools/${tool.slug ?? tool.id}`)}
                 class="btn primary icon-only-btn"
                 aria-label="Editar ficha"
                 title="Editar ficha"
