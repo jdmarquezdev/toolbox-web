@@ -1,13 +1,4 @@
-const rawBasePath = (process.env.ADMIN_BASE_PATH ?? "").trim();
-
-function normalizeBasePath(value: string) {
-  if (!value) return "";
-
-  const withLeadingSlash = value.startsWith("/") ? value : `/${value}`;
-  return withLeadingSlash.replace(/\/+$/, "");
-}
-
-export const ADMIN_BASE_PATH = normalizeBasePath(rawBasePath);
+export const ADMIN_BASE_PATH = "/admin";
 
 export function adminPath(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;

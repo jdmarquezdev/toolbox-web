@@ -5,8 +5,8 @@
   let toastVisible = $state(false);
   let toastMessage = $state("");
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
-  const bookmarkletActive = data.pathname === "/bookmarklet" || data.pathname.startsWith("/bookmarklet/");
-  const toolsActive = (data.section === "tools" || data.pathname.startsWith("/tools/")) && !bookmarkletActive;
+  const bookmarkletActive = data.section === "bookmarklet";
+  const toolsActive = data.section === "tools" || data.pathname.startsWith("/tools/");
 
   const applyTheme = `
     (() => {
@@ -57,18 +57,18 @@
 <div class="shell">
   <header class="topbar">
     <div class="header-nav">
-      <a href={adminPath("/")} class="header-brand">Toolbox Admin</a>
+      <a href="/admin/" class="header-brand">Toolbox Admin</a>
       {#if data.isAuthed}
         <a
           class={`header-link ${toolsActive ? "is-active" : ""}`}
-          href={adminPath("/")}
+          href="/admin/"
         >
           Herramientas
         </a>
         <a class={`header-link ${data.section === "collections" ? "is-active" : ""}`} href={adminPath("/?section=collections")}>
           Colecciones
         </a>
-        <a class={`header-link ${bookmarkletActive ? "is-active" : ""}`} href={adminPath("/bookmarklet")}>
+        <a class={`header-link ${bookmarkletActive ? "is-active" : ""}`} href={adminPath("/?section=bookmarklet")}>
           Bookmarklet
         </a>
       {/if}

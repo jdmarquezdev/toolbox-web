@@ -1,6 +1,10 @@
 <script lang="ts">
+  import { DragDropProvider, KeyboardSensor, PointerSensor } from "@dnd-kit-svelte/svelte";
+  import { move } from "@dnd-kit/helpers";
   import { cubicInOut, cubicOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
+  import SortableDropZone from "$lib/components/SortableDropZone.svelte";
+  import SortableItem from "$lib/components/SortableItem.svelte";
   import { adminPath } from "$lib/paths";
 
   type ViewKey = "inbox" | "relevantes" | "archivadas" | "descartadas";
@@ -8,10 +12,8 @@
 
   let { data } = $props();
 
-  const VIEW_KEY = "toolbox-admin-view";
-
-  let selectedView = $state<ViewKey>("inbox");
-  const activeSection = $derived(data.section === "collections" ? "collections" : "tools");
+  let selectedView = $state<ViewKey>(((data as any).selectedView as ViewKey) ?? "inbox");
+  const activeSection = $derived(data.section === "collections" || data.section === "bookmarklet" ? data.section : "tools");
   let moderation = $state({
     inbox: [...data.inbox],
     relevant: [...data.relevant],
@@ -24,9 +26,14 @@
   let createCollectionSlugTouched = $state(false);
   let collectionSlugTouched = $state<Record<string, boolean>>({});
   let isSavingModeration = $state(false);
-
-  let draggedModerationTool: { id: string; from: ModerationState } | null = null;
-  let draggedCollectionId: string | null = null;
+  const captureBase = String((data as any).captureBase ?? "");
+  const bookmarkletCode = `javascript:(()=>{window.location.href='${captureBase}?url='+encodeURIComponent(window.location.href);})();`;
+  const bookmarkletHref = bookmarkletCode;
+  let copied = $state(false);
+  const sensors = [
+    PointerSensor,
+    KeyboardSensor,
+  ];
 
   const stateByView: Record<ViewKey, ModerationState> = {
     inbox: "inbox",
@@ -51,23 +58,6 @@
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
   }
-
-  if (typeof window !== "undefined") {
-    const hash = window.location.hash.replace("#", "");
-    const hashView = hash === "relevantes" || hash === "archivadas" || hash === "descartadas" || hash === "inbox" ? hash : null;
-    const stored = localStorage.getItem(VIEW_KEY);
-    const storedView =
-      stored === "relevantes" || stored === "archivadas" || stored === "descartadas" || stored === "inbox" ? stored : null;
-
-    selectedView = (hashView as ViewKey) ?? (storedView as ViewKey) ?? "inbox";
-
-  }
-
-  $effect(() => {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(VIEW_KEY, selectedView);
-    }
-  });
 
   function mediaUrl(tool: { screenshotUrl?: string | null; ogImageUrl?: string | null; url: string }) {
     const candidate = tool.screenshotUrl ?? tool.ogImageUrl;
@@ -112,73 +102,39 @@
     }
   }
 
-  function moveModerationTool(targetState: ModerationState, targetId?: string) {
-    if (!draggedModerationTool) return;
-
-    const fromList = [...moderation[draggedModerationTool.from]];
-    const index = fromList.findIndex((tool: any) => tool.id === draggedModerationTool?.id);
-    if (index < 0) return;
-
-    const [tool] = fromList.splice(index, 1);
-    const toList = targetState === draggedModerationTool.from ? fromList : [...moderation[targetState]];
-
-    if (targetId) {
-      const targetIndex = toList.findIndex((item: any) => item.id === targetId);
-      if (targetIndex >= 0) {
-        toList.splice(targetIndex, 0, tool);
-      } else {
-        toList.push(tool);
-      }
-    } else {
-      toList.push(tool);
+  function onToolsDragOver(event: any) {
+    const state = stateByView[selectedView];
+    const updated = move(moderation[state], event);
+    if (updated !== moderation[state]) {
+      moderation[state] = updated;
     }
-
-    moderation = {
-      ...moderation,
-      [draggedModerationTool.from]: draggedModerationTool.from === targetState ? toList : fromList,
-      [targetState]: toList
-    };
   }
 
-  async function onDropOnTool(targetState: ModerationState, targetId: string) {
-    moveModerationTool(targetState, targetId);
-    draggedModerationTool = null;
+  async function onToolsDragEnd(event: any) {
+    const state = stateByView[selectedView];
+    const updated = move(moderation[state], event);
+    if (updated !== moderation[state]) {
+      moderation[state] = updated;
+    }
     await persistModerationOrder();
   }
 
-  async function onDropOnColumn(targetState: ModerationState) {
-    moveModerationTool(targetState);
-    draggedModerationTool = null;
-    await persistModerationOrder();
+  function onCollectionsDragOver(event: any) {
+    const updated = move(collections, event);
+    if (updated !== collections) {
+      collections = updated;
+    }
   }
 
-  function onDragStartCollection(collectionId: string) {
-    draggedCollectionId = collectionId;
-  }
-
-  async function onDropCollection(targetCollectionId: string) {
-    if (!draggedCollectionId || draggedCollectionId === targetCollectionId) {
-      draggedCollectionId = null;
-      return;
+  async function onCollectionsDragEnd(event: any) {
+    const updated = move(collections, event);
+    if (updated !== collections) {
+      collections = updated;
     }
-
-    const list = [...collections];
-    const from = list.findIndex((item: any) => item.id === draggedCollectionId);
-    const to = list.findIndex((item: any) => item.id === targetCollectionId);
-    if (from < 0 || to < 0) {
-      draggedCollectionId = null;
-      return;
-    }
-
-    const [moved] = list.splice(from, 1);
-    list.splice(to, 0, moved);
-    collections = list;
-    draggedCollectionId = null;
-
     await fetch(adminPath("/api/admin/collections/reorder"), {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ids: list.map((item: any) => item.id) })
+      body: JSON.stringify({ ids: collections.map((item: any) => item.id) })
     });
   }
 
@@ -201,17 +157,30 @@
   function markCollectionSlugTouched(collectionId: string) {
     collectionSlugTouched = { ...collectionSlugTouched, [collectionId]: true };
   }
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(bookmarkletCode);
+      copied = true;
+      setTimeout(() => {
+        copied = false;
+      }, 1600);
+    } catch {
+      copied = false;
+    }
+  }
+
+  $effect(() => {
+    selectedView = (((data as any).selectedView as ViewKey) ?? "inbox");
+  });
 </script>
 
 {#if activeSection === "tools"}
 <div class="admin-section" in:fade={{ duration: 220, delay: 140, easing: cubicOut }} out:fade={{ duration: 140, easing: cubicInOut }}>
 <section class="grid section-gap">
-  <div class="row-between">
-    <h1 class="page-title">Panel de control</h1>
-    {#if isSavingModeration}
-      <p class="muted">Guardando orden...</p>
-    {/if}
-  </div>
+  {#if isSavingModeration}
+    <p class="muted">Guardando orden...</p>
+  {/if}
 
   <form method="post" action="?/addTool" class="card tool-form form-block">
     <input name="url" required placeholder="https://..." />
@@ -225,120 +194,114 @@
 
 <section class="section-gap">
   <div class="view-switcher" role="tablist" aria-label="Vista de moderación">
-    <button
+    <a
       class={`switch-btn ${selectedView === "inbox" ? "is-active" : ""}`}
-      type="button"
+      href={adminPath("/?view=inbox")}
       role="tab"
       aria-selected={selectedView === "inbox"}
-      onclick={() => (selectedView = "inbox")}
     >
       Nuevo ({moderation.inbox.length})
-    </button>
-    <button
+    </a>
+    <a
       class={`switch-btn ${selectedView === "relevantes" ? "is-active" : ""}`}
-      type="button"
+      href={adminPath("/?view=relevantes")}
       role="tab"
       aria-selected={selectedView === "relevantes"}
-      onclick={() => (selectedView = "relevantes")}
     >
       Relevantes ({moderation.relevant.length})
-    </button>
-    <button
+    </a>
+    <a
       class={`switch-btn ${selectedView === "archivadas" ? "is-active" : ""}`}
-      type="button"
+      href={adminPath("/?view=archivadas")}
       role="tab"
       aria-selected={selectedView === "archivadas"}
-      onclick={() => (selectedView = "archivadas")}
     >
       Archivadas ({moderation.archived.length})
-    </button>
-    <button
+    </a>
+    <a
       class={`switch-btn ${selectedView === "descartadas" ? "is-active" : ""}`}
-      type="button"
+      href={adminPath("/?view=descartadas")}
       role="tab"
       aria-selected={selectedView === "descartadas"}
-      onclick={() => (selectedView = "descartadas")}
     >
       Descartadas ({moderation.discarded.length})
-    </button>
+    </a>
   </div>
 </section>
 
-<section
-  id={selectedView}
-  class="section-gap"
-  aria-label="Listado moderado"
-  ondragover={(event) => event.preventDefault()}
-  ondrop={() => onDropOnColumn(stateByView[selectedView])}
->
-  <div class="admin-card-grid">
-    {#if toolsForView(selectedView).length === 0}
-      <article class="card form-block muted">No hay herramientas en {labelByState[stateByView[selectedView]].toLowerCase()}.</article>
-    {:else}
-      {#each toolsForView(selectedView) as tool (tool.id)}
+{#key selectedView}
+  <section
+    id={selectedView}
+    class="section-gap"
+    aria-label="Listado moderado"
+    in:fly={{ x: 18, duration: 220, easing: cubicOut, opacity: 0.2 }}
+    out:fly={{ x: -18, duration: 180, easing: cubicInOut, opacity: 0.2 }}
+  >
+    <DragDropProvider {sensors} onDragOver={onToolsDragOver} onDragEnd={onToolsDragEnd}>
+    <SortableDropZone id={`tools-${selectedView}`} type="column" accept="item" class="admin-card-grid">
+      {#if toolsForView(selectedView).length === 0}
+        <article class="card form-block muted">No hay herramientas en {labelByState[stateByView[selectedView]].toLowerCase()}.</article>
+      {:else}
+      {#each toolsForView(selectedView) as tool, index (tool.id)}
+        <SortableItem
+          class="sortable-grid-item"
+          id={tool.id}
+          index={() => index}
+          group={`tools-${selectedView}`}
+          type="item"
+          data={{ group: `tools-${selectedView}` }}
+        >
         <article
           class="tool-card"
           in:fly={{ y: 4, duration: 280, easing: cubicOut, opacity: 0.25 }}
-          draggable="true"
-          ondragstart={() => (draggedModerationTool = { id: tool.id, from: stateByView[selectedView] })}
-          ondragend={() => (draggedModerationTool = null)}
-          ondragover={(event) => event.preventDefault()}
-          ondrop={(event) => {
-            event.preventDefault();
-            onDropOnTool(stateByView[selectedView], tool.id);
-          }}
         >
-          <a class="tool-media-link" href={tool.url} target="_blank" rel="noreferrer" title="Abrir fuente">
+          <a class="tool-media-link" href={tool.url} target="_blank" rel="noreferrer" title="Abrir fuente" draggable="false">
             <div class="tool-media">
-              {#if mediaUrl(tool)}
-                <img src={mediaUrl(tool) ?? undefined} alt={tool.title ?? "Preview"} loading="lazy" />
-              {:else}
-                <div class="tool-placeholder">{(tool.title ?? "AI").slice(0, 2)}</div>
-              {/if}
-            </div>
-          </a>
-
-          <div class="tool-content">
-            <h3 class="tool-name">{tool.title ?? tool.url}</h3>
-            <p class="tool-meta">{tool.sourceType}</p>
-            <p class="tool-desc">{tool.description ?? "Sin descripción"}</p>
-            <div class="tool-footer">
-              <div class="state-actions">
-                {#each stateActionTargets(stateByView[selectedView]) as action}
-                  <form method="post" action="?/setState">
-                    <input type="hidden" name="id" value={tool.id} />
-                    <input type="hidden" name="state" value={action.value} />
-                    <input type="hidden" name="view" value={selectedView} />
-                    <button class="btn btn-xs" type="submit">{action.label}</button>
-                  </form>
-                {/each}
+                {#if mediaUrl(tool)}
+                  <img src={mediaUrl(tool) ?? undefined} alt={tool.title ?? "Preview"} loading="lazy" draggable="false" />
+                {:else}
+                  <div class="tool-placeholder">{(tool.title ?? "AI").slice(0, 2)}</div>
+                {/if}
               </div>
-              <a
-                href={adminPath(`/tools/${tool.slug ?? tool.id}`)}
-                class="btn primary icon-only-btn"
-                aria-label="Editar ficha"
-                title="Editar ficha"
-              >
-                <span class="icon-mask icon-edit" aria-hidden="true"></span>
-              </a>
+            </a>
+
+            <div class="tool-content">
+              <h3 class="tool-name">{tool.title ?? tool.url}</h3>
+              <p class="tool-meta">{tool.sourceType}</p>
+              <p class="tool-desc">{tool.description ?? "Sin descripción"}</p>
+              <div class="tool-footer">
+                <div class="state-actions">
+                  {#each stateActionTargets(stateByView[selectedView]) as action}
+                    <form method="post" action="?/setState">
+                      <input type="hidden" name="id" value={tool.slug ?? tool.id} />
+                      <input type="hidden" name="state" value={action.value} />
+                      <input type="hidden" name="view" value={selectedView} />
+                      <button class="btn btn-xs" type="submit">{action.label}</button>
+                    </form>
+                  {/each}
+                </div>
+                <a
+                  href={adminPath(`/tools/${tool.slug ?? tool.id}`)}
+                  class="btn primary icon-only-btn"
+                  aria-label="Editar ficha"
+                  title="Editar ficha"
+                >
+                  <span class="icon-mask icon-edit" aria-hidden="true"></span>
+                </a>
+              </div>
             </div>
-          </div>
-        </article>
-      {/each}
-    {/if}
-  </div>
-</section>
+          </article>
+        </SortableItem>
+        {/each}
+      {/if}
+    </SortableDropZone>
+    </DragDropProvider>
+  </section>
+{/key}
 
  </div>
-{:else}
+{:else if activeSection === "collections"}
 <div class="admin-section" in:fade={{ duration: 220, delay: 140, easing: cubicOut }} out:fade={{ duration: 140, easing: cubicInOut }}>
-<section class="section-gap">
-  <div class="row-between">
-    <h2 class="page-title">Colecciones</h2>
-    <p class="muted">Arrastra para reordenar colecciones.</p>
-  </div>
-</section>
-
 <section class="section-gap">
   <form method="post" action="?/createCollection" class="card form-block collection-create-form">
     <input
@@ -362,22 +325,24 @@
   </form>
 </section>
 
-<section class="collection-admin-grid">
+<section class="section-gap">
+  <DragDropProvider {sensors} onDragOver={onCollectionsDragOver} onDragEnd={onCollectionsDragEnd}>
+  <SortableDropZone id="collections-list" type="column" accept="item" class="collection-admin-grid">
   {#if collections.length === 0}
     <article class="card form-block muted">No hay colecciones creadas.</article>
   {:else}
-    {#each collections as collection (collection.id)}
+    {#each collections as collection, index (collection.id)}
+      <SortableItem
+        class="sortable-grid-item"
+        id={collection.id}
+        index={() => index}
+        group="collections-list"
+        type="item"
+        data={{ group: "collections-list" }}
+      >
       <article
         class="card form-block collection-admin-card"
         in:fly={{ y: 4, duration: 280, easing: cubicOut, opacity: 0.25 }}
-        draggable="true"
-        ondragstart={() => onDragStartCollection(collection.id)}
-        ondragend={() => (draggedCollectionId = null)}
-        ondragover={(event) => event.preventDefault()}
-        ondrop={(event) => {
-          event.preventDefault();
-          onDropCollection(collection.id);
-        }}
       >
         <form method="post" action="?/updateCollection" class="grid">
           <input type="hidden" name="id" value={collection.id} />
@@ -422,8 +387,45 @@
           </div>
         </form>
       </article>
+      </SortableItem>
     {/each}
   {/if}
+  </SortableDropZone>
+  </DragDropProvider>
+</section>
+</div>
+{:else}
+<div class="admin-section" in:fade={{ duration: 220, delay: 140, easing: cubicOut }} out:fade={{ duration: 140, easing: cubicInOut }}>
+<section class="card form-block grid">
+  <p class="muted" style="margin:0;">
+    Arrastra el botón a tu barra de marcadores. Después, al usarlo desde cualquier web, guardará esa URL en inbox.
+  </p>
+
+  <div class="action-cluster bookmarklet-actions">
+    <a class="btn primary" href={bookmarkletHref}>Guardar en Toolbox</a>
+  </div>
+
+  <p class="muted" style="margin:0;">Si prefieres crear el marcador manualmente, copia este código:</p>
+
+  <div class="bookmarklet-code-wrap">
+    <button
+      class="btn primary icon-only-btn bookmarklet-copy-btn"
+      type="button"
+      aria-label="Copiar código"
+      title="Copiar código"
+      onclick={copyCode}
+    >
+      <span class="icon-mask icon-copy" aria-hidden="true"></span>
+    </button>
+    {#if copied}
+      <p class="muted bookmarklet-copied">Copiado.</p>
+    {/if}
+
+    <label class="field-grid">
+      <span class="field-label">Código bookmarklet</span>
+      <textarea readonly rows="4">{bookmarkletCode}</textarea>
+    </label>
+  </div>
 </section>
 </div>
 {/if}

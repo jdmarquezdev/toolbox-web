@@ -15,7 +15,8 @@ const TOAST_MESSAGES: Record<string, string> = {
 };
 
 export const load: LayoutServerLoad = async ({ cookies, url }) => {
-  const section = url.searchParams.get("section") === "collections" ? "collections" : "tools";
+  const rawSection = url.searchParams.get("section");
+  const section = rawSection === "collections" || rawSection === "bookmarklet" ? rawSection : "tools";
   const pathname = url.pathname;
   const toastKey = url.searchParams.get("toast") ?? "";
   const toastMessage = TOAST_MESSAGES[toastKey] ?? null;

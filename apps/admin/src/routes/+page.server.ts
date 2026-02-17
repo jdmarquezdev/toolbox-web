@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from "./$types";
 import {
   createCollection,
   createOrBumpTool,
+  getToolByIdOrSlug,
   deleteCollection,
   getAdminTools,
   listCollections,
@@ -30,7 +31,10 @@ export const load: PageServerLoad = async ({ url }) => {
   const archived = await getAdminTools("archived");
   const discarded = await getAdminTools("discarded");
   const collections = await listCollections();
-  const section = url.searchParams.get("section") === "collections" ? "collections" : "tools";
+  const rawSection = url.searchParams.get("section");
+  const section = rawSection === "collections" || rawSection === "bookmarklet" ? rawSection : "tools";
+  const selectedView = normalizeView(String(url.searchParams.get("view") ?? "inbox"));
+  const captureBase = `${url.origin}${adminPath("/capture")}`;
 
   return {
     inbox,
@@ -38,7 +42,9 @@ export const load: PageServerLoad = async ({ url }) => {
     archived,
     discarded,
     collections,
-    section
+    section,
+    selectedView,
+    captureBase
   };
 };
 
@@ -60,16 +66,21 @@ export const actions: Actions = {
   },
   setState: async ({ request }) => {
     const data = await request.formData();
-    const id = String(data.get("id") ?? "");
+    const idOrSlug = String(data.get("id") ?? "");
     const state = String(data.get("state") ?? "");
     const view = normalizeView(String(data.get("view") ?? ""));
 
-    if (!id || (state !== "relevant" && state !== "archived" && state !== "discarded")) {
+    if (!idOrSlug || (state !== "relevant" && state !== "archived" && state !== "discarded")) {
       return { ok: false };
     }
 
-    await setToolModerationState(id, state);
-    throw redirect(303, adminPath(`/?toast=state-updated#${view}`));
+    const tool = await getToolByIdOrSlug(idOrSlug);
+    if (!tool) {
+      return { ok: false };
+    }
+
+    await setToolModerationState(tool.id, state);
+    throw redirect(303, adminPath(`/?toast=state-updated&view=${view}`));
   },
   createCollection: async ({ request }) => {
     const data = await request.formData();

@@ -13,13 +13,13 @@ if (!process.env.DATABASE_URL) {
 }
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().min(1).default("postgres://postgres:postgres@localhost:5432/toolbox"),
-  SESSION_SECRET: z.string().min(16).default("dev-session-secret-change-me"),
-  INGEST_TOKEN: z.string().min(8).default("dev-ingest-token"),
+  DATABASE_URL: z.string().url(),
+  SESSION_SECRET: z.string().min(32),
+  INGEST_TOKEN: z.string().min(16),
   SCREENSHOT_WORKER_ENABLED: z.string().optional(),
-  OWNER_EMAIL: z.string().email().default("owner@toolbox.local"),
-  OWNER_PASSWORD: z.string().min(8).default("changeme123"),
-  PUBLIC_API_BASE_URL: z.string().url().default("http://localhost:5173")
+  OWNER_EMAIL: z.string().email(),
+  OWNER_PASSWORD: z.string().min(12),
+  PUBLIC_API_BASE_URL: z.string().url().default("https://toolbox.jdmarquez.dev")
 });
 
 export const env = envSchema.parse({

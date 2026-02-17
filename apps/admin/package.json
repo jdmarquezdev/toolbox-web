@@ -11,9 +11,11 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@toolbox/core": "0.1.0",
+    "@dnd-kit-svelte/svelte": "^0.1.6",
+    "@dnd-kit/helpers": "^0.3.0",
     "@sveltejs/adapter-node": "5.2.11",
     "@sveltejs/kit": "2.14.1",
+    "@toolbox/core": "0.1.0",
     "svelte": "5.16.0"
   },
   "devDependencies": {

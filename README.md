@@ -79,8 +79,8 @@ Toolbox es una plataforma personal para capturar, moderar y publicar herramienta
 
 ### Apps (local)
 
-- Público: `http://localhost:4321`
-- Admin/API: `http://localhost:5173`
+- Público: `/<root>`
+- Admin/API: `/admin` y `/api/*`
 
 ### API pública
 
@@ -140,8 +140,7 @@ psql "$DATABASE_URL" -f db/schema.sql
 
 ```bash
 bun install
-bun run dev:admin
-bun run dev:public
+bun run dev
 ```
 
 5. Checks:
@@ -169,9 +168,7 @@ Actualmente queda preparada la base de ingestión por token:
 
 ## Nota sobre rutas admin
 
-- El prefijo del panel se controla con `ADMIN_BASE_PATH`.
-- En local (app admin en raíz), déjalo vacío: `ADMIN_BASE_PATH=`.
-- En despliegue bajo subruta, configúralo explícitamente: `ADMIN_BASE_PATH=/admin`.
+- El panel admin está fijado en `/admin`.
 
 ## Licencia
 

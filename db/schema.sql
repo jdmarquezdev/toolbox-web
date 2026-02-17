@@ -84,15 +84,6 @@ create table if not exists tools (
   "seenCount" int not null default 1
 );
 
-alter table tools
-  add column if not exists "moderationState" moderation_state not null default 'inbox';
-
-alter table tools
-  add column if not exists "moderationPosition" int not null default 0;
-
-alter table tools
-  add column if not exists slug text;
-
 create table if not exists tool_tags (
   "toolId" uuid not null references tools(id) on delete cascade,
   "tagId" uuid not null references tags(id) on delete cascade,
@@ -108,12 +99,6 @@ create table if not exists collections (
   position int not null default 0,
   "createdAt" timestamptz not null default now()
 );
-
-alter table collections
-  add column if not exists position int not null default 0;
-
-alter table collections
-  alter column "isPublic" set default true;
 
 create table if not exists collection_tools (
   "collectionId" uuid not null references collections(id) on delete cascade,

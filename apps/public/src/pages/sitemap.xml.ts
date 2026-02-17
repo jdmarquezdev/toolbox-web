@@ -1,17 +1,16 @@
 import type { APIRoute } from "astro";
 
-import { env } from "@toolbox/core/env";
-
-export const GET: APIRoute = async () => {
-  const response = await fetch(`${env.PUBLIC_API_BASE_URL}/api/public/tools?sort=reviewedAt`);
+export const GET: APIRoute = async ({ url }) => {
+  const origin = url.origin;
+  const response = await fetch(`${origin}/api/public/tools?sort=reviewedAt`);
   const tools = response.ok ? await response.json() : [];
 
   const urls = [
-    "https://toolbox.jdmarquez.dev",
-    "https://toolbox.jdmarquez.dev/collections",
+    `${origin}/`,
+    `${origin}/?section=collections`,
     ...tools
       .filter((tool: any) => Boolean(tool.slug))
-      .map((tool: any) => `https://toolbox.jdmarquez.dev/tools/${tool.slug}`)
+      .map((tool: any) => `${origin}/tools/${tool.slug}`)
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

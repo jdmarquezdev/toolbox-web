@@ -17,6 +17,27 @@ if (tool.slug && tool.slug !== idOrSlug) {
 }
 
 const mediaUrl = resolveToolMediaUrl(tool);
+
+const sourceIconClassByType: Record<string, string> = {
+  github: "icon-source-github",
+  youtube: "icon-source-youtube",
+  website: "icon-source-website",
+  article: "icon-source-article",
+  x: "icon-source-x",
+  other: "icon-source-other"
+};
+
+const sourceLabelByType: Record<string, string> = {
+  github: "GitHub",
+  youtube: "YouTube",
+  website: "Web",
+  article: "Articulo",
+  x: "X",
+  other: "Other"
+};
+
+const sourceIconClass = sourceIconClassByType[tool.sourceType ?? ""] ?? "icon-source-other";
+const sourceLabel = sourceLabelByType[tool.sourceType ?? ""] ?? "Other";
 ---
 
 <BaseLayout title={`${tool.title ?? "Tool"} | Toolbox`} description={tool.description ?? "Detalle de herramienta"}>
@@ -33,17 +54,28 @@ const mediaUrl = resolveToolMediaUrl(tool);
     </div>
     <article class="detail-panel">
       <header class="section-head" style="gap:.35rem;">
-        <h1 class="section-title" style="font-size:clamp(1.7rem,2.4vw,2.3rem);">{tool.title ?? "Sin título"}</h1>
-        <p class="section-subtitle">{tool.description ?? "Sin descripción"}</p>
+        <div class="section-head-text">
+          <h1 class="section-title" style="font-size:clamp(1.7rem,2.4vw,2.3rem);">{tool.title ?? "Sin título"}</h1>
+          <p class="section-subtitle">{tool.description ?? "Sin descripción"}</p>
+        </div>
       </header>
-      <div style="display:flex;gap:.45rem;flex-wrap:wrap;">
-        <span class="chip">{tool.sourceType}</span>
-      </div>
-      <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
-        <a href={tool.url} target="_blank" rel="noreferrer"><button class="primary">Visitar herramienta</button></a>
-        <a href="/" class="tool-link">Volver</a>
-      </div>
       {tool.notesPublic ? <p class="tool-desc">{tool.notesPublic}</p> : null}
+
+      <div class="detail-bottom-row">
+        <span class="chip chip-with-label" aria-label={`Fuente: ${tool.sourceType ?? "other"}`} title={tool.sourceType ?? "other"}>
+          <span class={`icon-mask ${sourceIconClass}`} aria-hidden="true"></span>
+          <span>{sourceLabel}</span>
+        </span>
+
+        <div class="detail-actions">
+          <a href={tool.url} target="_blank" rel="noreferrer" class="action-btn action-btn-accent icon-only-btn" aria-label="Visitar herramienta" title="Visitar herramienta">
+            <span class="icon-mask icon-visit" aria-hidden="true"></span>
+          </a>
+          <a href="/" class="action-btn action-btn-accent icon-only-btn" aria-label="Volver" title="Volver">
+            <span class="icon-mask icon-back" aria-hidden="true"></span>
+          </a>
+        </div>
+      </div>
     </article>
   </section>
 </BaseLayout>

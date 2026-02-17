@@ -1,5 +1,3 @@
-import { env } from "@toolbox/core/env";
-
 type ApiGetOptions = {
   origin?: string;
 };
@@ -19,7 +17,10 @@ export async function apiGet<T>(path: string, options: ApiGetOptions = {}): Prom
     attempts.push(`${options.origin}${path}`);
   }
 
-  attempts.push(`${env.PUBLIC_API_BASE_URL}${path}`);
+  const configuredBase = (process.env.PUBLIC_API_BASE_URL ?? "").trim();
+  if (configuredBase) {
+    attempts.push(`${configuredBase}${path}`);
+  }
 
   let lastError: unknown = null;
   for (const url of attempts) {

@@ -122,38 +122,38 @@ a {
 }
 
 .icon-logout {
-  mask-image: url("/icons/logout_24px.svg");
-  -webkit-mask-image: url("/icons/logout_24px.svg");
+  mask-image: url("/admin/icons/logout_24px.svg");
+  -webkit-mask-image: url("/admin/icons/logout_24px.svg");
 }
 
 .icon-save {
-  mask-image: url("/icons/save_24px.svg");
-  -webkit-mask-image: url("/icons/save_24px.svg");
+  mask-image: url("/admin/icons/save_24px.svg");
+  -webkit-mask-image: url("/admin/icons/save_24px.svg");
 }
 
 .icon-edit {
-  mask-image: url("/icons/edit_24px.svg");
-  -webkit-mask-image: url("/icons/edit_24px.svg");
+  mask-image: url("/admin/icons/edit_24px.svg");
+  -webkit-mask-image: url("/admin/icons/edit_24px.svg");
 }
 
 .icon-back {
-  mask-image: url("/icons/arrow_back_24px.svg");
-  -webkit-mask-image: url("/icons/arrow_back_24px.svg");
+  mask-image: url("/admin/icons/arrow_back_24px.svg");
+  -webkit-mask-image: url("/admin/icons/arrow_back_24px.svg");
 }
 
 .icon-delete {
-  mask-image: url("/icons/delete_24px.svg");
-  -webkit-mask-image: url("/icons/delete_24px.svg");
+  mask-image: url("/admin/icons/delete_24px.svg");
+  -webkit-mask-image: url("/admin/icons/delete_24px.svg");
 }
 
 .icon-add {
-  mask-image: url("/icons/add_24px.svg");
-  -webkit-mask-image: url("/icons/add_24px.svg");
+  mask-image: url("/admin/icons/add_24px.svg");
+  -webkit-mask-image: url("/admin/icons/add_24px.svg");
 }
 
 .icon-copy {
-  mask-image: url("/icons/content_copy_24px.svg");
-  -webkit-mask-image: url("/icons/content_copy_24px.svg");
+  mask-image: url("/admin/icons/content_copy_24px.svg");
+  -webkit-mask-image: url("/admin/icons/content_copy_24px.svg");
 }
 
 .card {
@@ -306,10 +306,38 @@ a {
   align-content: start;
 }
 
+.collection-admin-card form.grid {
+  padding-top: 0.2rem;
+}
+
 .admin-card-grid {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+
+.sortable-grid-item {
+  min-width: 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.sortable-grid-item > .tool-card,
+.sortable-grid-item > .collection-admin-card {
+  height: 100%;
+}
+
+.sortable-grid-item[data-dragging="true"] {
+  z-index: 100;
+  opacity: 0.8;
+}
+
+.sortable-grid-item[data-dragging="true"] .tool-card,
+.sortable-grid-item[data-dragging="true"] .collection-admin-card {
+  transition: none !important;
+  transform: none !important;
+  box-shadow: 0 20px 40px rgb(0 0 0 / 0.5);
+  border-color: var(--accent);
 }
 
 .edit-layout {
@@ -365,6 +393,7 @@ a {
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  position: relative;
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
