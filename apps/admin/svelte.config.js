@@ -4,9 +4,6 @@ import adapter from "@sveltejs/adapter-node";
 const config = {
   kit: {
     appDir: "admin/_app",
-    paths: {
-      base: "/admin"
-    },
     adapter: adapter()
   }
 };
